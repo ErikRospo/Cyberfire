@@ -2,6 +2,7 @@
 
 Cyberfire is a real-time, interactive fire simulation written in Python using [Taichi](https://taichi.graphics/). It features multiple color palettes and realistic fire dynamics powered by Perlin noise. The base structure is inspired by DOOM fire, though much improved via modern techniques.
 
+This code was originally inspired by [Fabien Sanglard's blog](https://fabiensanglard.net/doom_fire_psx/) on this topic.
 ## Features
 
 - Real-time fire simulation using Taichi's GPU acceleration
