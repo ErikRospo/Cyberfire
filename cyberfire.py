@@ -155,7 +155,7 @@ def do_fire(time: float):
 
 
 @ti.kernel
-def change_heat_at_position(mx: int, my: int, radius: int,multiplier:int):
+def change_heat_at_position(mx: int, my: int, radius: int, multiplier: int):
     for dx, dy in ti.ndrange((-radius, radius), (-radius, radius)):
         x = mx + dx
         y = my + dy
@@ -163,10 +163,8 @@ def change_heat_at_position(mx: int, my: int, radius: int,multiplier:int):
             dist = (dx * dx + dy * dy) ** 0.5
             if dist <= radius:
                 # Add intensity falloff based on distance (optional)
-                delta = int(MAX_INTENSITY * (1 - dist / radius)) *multiplier
+                delta = int(MAX_INTENSITY * (1 - dist / radius)) * multiplier
                 firePixels[x, y] = ti.min(MAX_INTENSITY, firePixels[x, y] + delta)
-
-
 
 
 @ti.kernel
@@ -239,21 +237,19 @@ def main():
                 # Accelerating scrolling: increase speed if scrolling repeatedly
                 now = time.time()
                 if now - brush_changed < 0.5:
-                    accel = 1/(now-brush_changed+0.25)
+                    accel = 1 / (now - brush_changed + 0.25)
                 else:
                     accel = 1
-                brush_radius += int(event.delta[1]* accel / 32) 
+                brush_radius += int(event.delta[1] * accel / 32)
                 brush_radius = max(1, min(brush_radius, 400))  # Clamp radius
                 brush_changed = now
         mx, my = gui.get_cursor_pos()  # normalized [0,1]
         mx_int = int(mx * FIRE_WIDTH)
         my_int = int((1 - my) * FIRE_HEIGHT)  # flip y axis because image y is flipped
         if mouse_button_down:
-            change_heat_at_position(
-                mx_int, my_int, radius=brush_radius,multiplier=1
-            )
+            change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=1)
         if rmb_down:
-            change_heat_at_position(mx_int, my_int, radius=brush_radius,multiplier=-1)
+            change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=-1)
         update_image()
 
         gui.set_image(image)
