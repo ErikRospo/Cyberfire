@@ -1,7 +1,7 @@
 import time
 import taichi as ti
 
-from constants import DECAY_MULT, FIRE_HEIGHT, FIRE_WIDTH, MAX_INTENSITY, RAND_MULT
+from constants import DECAY_MULT, FIRE_HEIGHT, FIRE_WIDTH, MAX_INTENSITY, ADD_MULT
 from palettes import (
     palette_fire,
     palette_cyber,
@@ -142,7 +142,7 @@ def spread_fire(x: int, y: int, time: float):
 
         dst_x = ti.math.clamp(x + rand_offset, 0, FIRE_WIDTH - 1)
         decay = int(ti.random() *DECAY_MULT) + 1
-        rand_intensity = int(ti.random() *RAND_MULT)
+        rand_intensity = int(ti.random() *ADD_MULT)
         new_intensity = ti.max(0, below_intensity - decay + rand_intensity)
 
         firePixels[dst_x, y] = new_intensity
