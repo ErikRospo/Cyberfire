@@ -141,8 +141,8 @@ def spread_fire(x: int, y: int, time: float):
         rand_offset = int(offset_noise * 5.0) - 2  # [-2, 2]
 
         dst_x = ti.math.clamp(x + rand_offset, 0, FIRE_WIDTH - 1)
-        decay = int(ti.random() *DECAY_MULT) + 1
-        rand_intensity = int(ti.random() *ADD_MULT)
+        decay = int(ti.random() * DECAY_MULT) + 1
+        rand_intensity = int(ti.random() * ADD_MULT)
         new_intensity = ti.max(0, below_intensity - decay + rand_intensity)
 
         firePixels[dst_x, y] = new_intensity
@@ -252,7 +252,9 @@ def main():
         mx_int = int(mx * FIRE_WIDTH)
         my_int = int((1 - my) * FIRE_HEIGHT)  # flip y axis because image y is flipped
         if mouse_button_down:
-            add_heat_at_position(mx_int, my_int, radius=brush_radius, intensity=MAX_INTENSITY)
+            add_heat_at_position(
+                mx_int, my_int, radius=brush_radius, intensity=MAX_INTENSITY
+            )
         if rmb_down:
             remove_heat_at_position(mx_int, my_int, radius=brush_radius)
         update_image()

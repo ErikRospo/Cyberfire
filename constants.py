@@ -5,15 +5,14 @@ MAX_INTENSITY = 255
 
 ###Presets
 # #normal
-DECAY_MULT=5
-ADD_MULT=4
+DECAY_MULT = 5
+ADD_MULT = 4
 
 # #floating sparks
 # DECAY_MULT=11
 # ADD_MULT=10
 
 
-#big fire
+# big fire
 # DECAY_MULT=5
 # ADD_MULT=5
-
