@@ -1,6 +1,4 @@
-import os
-from PySide6.QtCore import QLibraryInfo
-
+from typing import Dict
 
 import sys
 import time
@@ -17,7 +15,7 @@ from core import (
     initialize_palette_cold_fire, initialize_palette_sunset, initialize_palette_toxic, initialize_palette_electric,
     FIRE_WIDTH, FIRE_HEIGHT
 )
-from tools import FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool, HighlightFixedTool
+from tools import FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool, HighlightFixedTool, Tool
 
 class FireWindow(QMainWindow):
     def __init__(self):
@@ -46,7 +44,7 @@ class FireWindow(QMainWindow):
         self.brush_changed = time.time() - 10
         self.mx = 0.5
         self.my = 0.5
-        self.tools = {
+        self.tools:Dict[str,Tool] = {
             "fire_brush": FireBrushTool(),
             "fire_erase": FireEraseTool(),
             "fix_brush": FixBrushTool(),
@@ -67,7 +65,18 @@ class FireWindow(QMainWindow):
             if tool.is_active():
                 tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
-        render_tool_radius(int(self.mx*FIRE_WIDTH),int((1-self.my)*FIRE_HEIGHT),self.brush_radius)        
+        if self.tools["highlight_fixed"].is_active():
+            highlight_fixed_pixels()
+        # Fade alpha from 80 to 0 over 2 seconds
+        elapsed = time.time() - self.brush_changed
+        if elapsed < 2:
+            alpha = int(80 * min(1,(1 - elapsed / 2)))
+            render_tool_radius(
+            int(self.mx * FIRE_WIDTH),
+            int((1 - self.my) * FIRE_HEIGHT),
+            self.brush_radius,
+            alpha
+            )
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img=np.rot90(np_img).copy()
@@ -143,6 +152,8 @@ class FireWindow(QMainWindow):
             firePixels.fill(0)
             initialize_fire()
             clear_fixed_pixels()
+        elif key==Qt.Key.Key_S:
+            self.brush_changed=time.time()+3
 
     def keyReleaseEvent(self, event: QKeyEvent):
         key = event.key()

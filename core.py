@@ -167,8 +167,7 @@ def highlight_fixed_pixels():
             image[x, FIRE_HEIGHT - 1 - y, 1] = 255
             image[x, FIRE_HEIGHT - 1 - y, 2] = 255
 @ti.kernel
-def render_tool_radius(mx: int, my: int, brush_radius: int):
-    alpha = 80  # 0-255, 80 is semi-transparent
+def render_tool_radius(mx: int, my: int, brush_radius: int,alpha:int):
     rad_squared=brush_radius*brush_radius
     for dx, dy in ti.ndrange((-brush_radius, brush_radius + 1), (-brush_radius, brush_radius + 1)):
         x = mx + dx
