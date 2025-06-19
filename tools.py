@@ -1,8 +1,5 @@
-from core import (
-    change_heat_at_position,
-    set_fixed_pixels,
-    highlight_fixed_pixels,
-)
+from core import (change_heat_at_position, highlight_fixed_pixels,
+                  set_fixed_pixels)
 
 
 class Tool:

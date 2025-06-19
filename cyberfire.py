@@ -1,39 +1,20 @@
-from typing import Dict
-
 import sys
 import time
-import numpy as np
-from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
-from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QKeyEvent
+from typing import Dict
 
-from core import (
-    firePixels,
-    image,
-    do_fire,
-    render_tool_radius,
-    update_image,
-    initialize_fire,
-    clear_fixed_pixels,
-    highlight_fixed_pixels,
-    initialize_palette_fire,
-    initialize_palette_cyber,
-    initialize_palette_gray,
-    initialize_palette_cold_fire,
-    initialize_palette_sunset,
-    initialize_palette_toxic,
-    initialize_palette_electric,
-    FIRE_WIDTH,
-    FIRE_HEIGHT,
-)
-from tools import (
-    FireBrushTool,
-    FireEraseTool,
-    FixBrushTool,
-    FixEraseTool,
-    HighlightFixedTool,
-    Tool,
-)
+import numpy as np
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
+
+from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
+                  firePixels, highlight_fixed_pixels, image, initialize_fire,
+                  initialize_palette_cold_fire, initialize_palette_cyber,
+                  initialize_palette_electric, initialize_palette_fire,
+                  initialize_palette_gray, initialize_palette_sunset,
+                  initialize_palette_toxic, render_tool_radius, update_image)
+from tools import (FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool,
+                   HighlightFixedTool, Tool)
 
 
 class FireWindow(QMainWindow):

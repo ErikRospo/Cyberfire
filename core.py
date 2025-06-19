@@ -1,14 +1,10 @@
 import taichi as ti
-from constants import DECAY_MULT, FIRE_HEIGHT, FIRE_WIDTH, MAX_INTENSITY, ADD_MULT
-from palettes import (
-    palette_fire,
-    palette_cyber,
-    palette_gray,
-    palette_cold_fire,
-    palette_sunset,
-    palette_toxic,
-    palette_electric,
-)
+
+from constants import (ADD_MULT, DECAY_MULT, FIRE_HEIGHT, FIRE_WIDTH,
+                       MAX_INTENSITY)
+from palettes import (palette_cold_fire, palette_cyber, palette_electric,
+                      palette_fire, palette_gray, palette_sunset,
+                      palette_toxic)
 
 ti.init(arch=ti.gpu)
 
