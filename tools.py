@@ -44,14 +44,12 @@ class FireBrushTool(Tool):
     tool_type = ToolType.FIRE_BRUSH
 
     def apply(self, mx_int, my_int, brush_radius, intensity:float=1):
-        # intensity_percent: 0-100
         change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=intensity)
 class FireEraseTool(Tool):
     tool_type = ToolType.FIRE_ERASE
 
     def apply(self, mx_int, my_int, brush_radius, intensity:float=1):
-        if intensity == 0:
-            return
+
         change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=-intensity)
 
 

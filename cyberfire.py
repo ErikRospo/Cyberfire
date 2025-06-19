@@ -24,8 +24,8 @@ from tools import (FireBrushTool, FireEraseTool, FireLineTool, FireRectTool,
 class ModeType(Enum):
     FIRE = auto()
     FIX = auto()
-    FIRE_LINE = auto()  # New mode
-    FIRE_RECT = auto()  # Rectangle mode
+    FIRE_LINE = auto()
+    FIRE_RECT = auto()
 
 
 class Mode:
@@ -181,8 +181,8 @@ class FireWindow(QMainWindow):
         mode_group = QButtonGroup(panel)
         fire_radio = QRadioButton("Fire Mode")
         fix_radio = QRadioButton("Fix Mode")
-        fireline_radio = QRadioButton("Fire Line Mode")  # New radio button
-        firerect_radio = QRadioButton("Fire Rect Mode")  # Rectangle radio button
+        fireline_radio = QRadioButton("Fire Line Mode")
+        firerect_radio = QRadioButton("Fire Rect Mode")
         fire_radio.setChecked(self.mode == ModeType.FIRE)
         fix_radio.setChecked(self.mode == ModeType.FIX)
         fireline_radio.setChecked(self.mode == ModeType.FIRE_LINE)
@@ -268,11 +268,11 @@ class FireWindow(QMainWindow):
         # Clear FireLineTool or FireRectTool state if leaving those modes
         if self.mode == ModeType.FIRE_LINE:
             s = self.tools[ToolType.FIRE_LINE]
-            assert type(s) == FireLineTool
+            assert type(s) == FireLineTool #Keep Pylance happy
             s.clear_first_point()
         if self.mode == ModeType.FIRE_RECT:
             s = self.tools[ToolType.FIRE_RECT]
-            assert type(s) == FireRectTool
+            assert type(s) == FireRectTool # Keep Pylance happy
             s.clear_first_point()
         self.mode = mode
         # Activate new mode
@@ -314,7 +314,7 @@ class FireWindow(QMainWindow):
         self.highlight_btn.setChecked(active)
         if active:
             self.highlight_btn.setStyleSheet(
-                "background-color: #aaf; font-weight: bold;"
+                "font-weight: bold;"
             )
         else:
             self.highlight_btn.setStyleSheet("")
