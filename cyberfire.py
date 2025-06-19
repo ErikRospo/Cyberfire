@@ -297,7 +297,6 @@ class FireWindow(QMainWindow):
         # Show highlight if highlight_fixed is active or if fix mode is active
         if (
             self.tools[ToolType.HIGHLIGHT_FIXED].is_active()
-            or self.mode == ModeType.FIX
         ):
             highlight_fixed_pixels()
         # Fade alpha from 80 to 0 over 2 seconds

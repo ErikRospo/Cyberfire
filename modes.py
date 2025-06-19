@@ -35,10 +35,36 @@ class FireMode(Mode):
     def __init__(self):
         super().__init__(ToolType.FIRE_BRUSH, ToolType.FIRE_ERASE)
 
+class HighlightFixedMixin(Mode):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._highlight_fixed_prev_state = None
 
-class FixMode(Mode):
+    def activate(self, tools):
+        highlight_tool = tools.get(ToolType.HIGHLIGHT_FIXED)
+        if highlight_tool:
+            self._highlight_fixed_prev_state = highlight_tool.is_active()
+            highlight_tool.trigger_on()
+        super().activate(tools)
+        return tools
+
+    def deactivate(self, tools):
+        highlight_tool = tools.get(ToolType.HIGHLIGHT_FIXED)
+        if highlight_tool and self._highlight_fixed_prev_state is not None:
+            if not self._highlight_fixed_prev_state:
+                highlight_tool.trigger_off()
+        super().deactivate(tools)
+        return tools
+
+
+class FixMode(HighlightFixedMixin, Mode):
     def __init__(self):
         super().__init__(ToolType.FIX_BRUSH, ToolType.FIX_ERASE)
+
+
+class FixRectMode(HighlightFixedMixin, Mode):
+    def __init__(self):
+        super().__init__(ToolType.FIX_RECT, ToolType.FIX_RECT)
 
 
 class FireLineMode(Mode):
@@ -51,6 +77,3 @@ class FireRectMode(Mode):
         super().__init__(ToolType.FIRE_RECT, ToolType.FIRE_RECT)
 
 
-class FixRectMode(Mode):
-    def __init__(self):
-        super().__init__(ToolType.FIX_RECT, ToolType.FIX_RECT)
