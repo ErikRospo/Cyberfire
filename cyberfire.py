@@ -194,9 +194,40 @@ class FireWindow(QMainWindow):
         layout.addWidget(highlight_btn)
         self.highlight_btn = highlight_btn
 
+        # --- Reset/Clear Buttons ---
+        reset_btn = QPushButton("Reset All")
+        reset_btn.clicked.connect(self.reset_all)
+        layout.addWidget(reset_btn)
+        self.reset_btn = reset_btn
+
+        clear_fire_btn = QPushButton("Clear Fire")
+        clear_fire_btn.clicked.connect(self.clear_fire)
+        layout.addWidget(clear_fire_btn)
+        self.clear_fire_btn = clear_fire_btn
+
+        reset_fixed_btn = QPushButton("Reset Fixed Pixels")
+        reset_fixed_btn.clicked.connect(self.reset_fixed_pixels)
+        layout.addWidget(reset_fixed_btn)
+        self.reset_fixed_btn = reset_fixed_btn
+
         layout.addStretch(1)
         panel.setLayout(layout)
         return panel
+
+    def reset_all(self):
+        firePixels.fill(0)
+        initialize_fire()
+        clear_fixed_pixels()
+        self.palette_functions[self.palette_idx]()
+        self.update_tool_buttons()
+
+    def clear_fire(self):
+        firePixels.fill(0)
+        self.update_tool_buttons()
+
+    def reset_fixed_pixels(self):
+        clear_fixed_pixels()
+        self.update_tool_buttons()
 
     def set_mode(self, mode):
         if mode == self.mode:
