@@ -12,10 +12,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
-                  initialize_palette_cold_fire, initialize_palette_cyber,
-                  initialize_palette_electric, initialize_palette_fire,
-                  initialize_palette_gray, initialize_palette_sunset,
-                  initialize_palette_toxic, render_tool_radius, update_image)
+                  get_palette_list, render_tool_radius, update_image)
 from modes import FireLineMode, FireMode, FireRectMode, FixMode, ModeType
 from tools import (FireBrushTool, FireEraseTool, FireLineTool, FireRectTool,
                    FixBrushTool, FixEraseTool, HighlightFixedTool, Tool,
@@ -51,15 +48,8 @@ class FireWindow(QMainWindow):
             ToolType.FIRE_RECT: FireRectTool(),
         }
 
-        self.palettes = [
-            ("Fire", initialize_palette_fire),
-            ("Cyber", initialize_palette_cyber),
-            ("Gray", initialize_palette_gray),
-            ("Cold Fire", initialize_palette_cold_fire),
-            ("Sunset", initialize_palette_sunset),
-            ("Toxic", initialize_palette_toxic),
-            ("Electric", initialize_palette_electric),
-        ]
+        # Use palette list from core.py
+        self.palettes = get_palette_list()
         self.palette_idx = 0
         self.palettes[self.palette_idx][1]()
         self.setWindowTitle("Fire Effect (PySide6)")

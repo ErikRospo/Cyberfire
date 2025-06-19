@@ -16,41 +16,27 @@ image = ti.field(dtype=ti.u8, shape=(FIRE_WIDTH, FIRE_HEIGHT, 3))
 # Color palette
 colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_INTENSITY + 1))
 
-# Palette management
+# --- Palette management ---
+
+_PALETTE_LIST = [
+    ("Fire", lambda: set_palette(palette_fire)),
+    ("Cyber", lambda: set_palette(palette_cyber)),
+    ("Gray", lambda: set_palette(palette_gray)),
+    ("Cold Fire", lambda: set_palette(palette_cold_fire)),
+    ("Sunset", lambda: set_palette(palette_sunset)),
+    ("Toxic", lambda: set_palette(palette_toxic)),
+    ("Electric", lambda: set_palette(palette_electric)),
+]
+
+
+def get_palette_list():
+    return _PALETTE_LIST
 
 
 def set_palette(palette_func):
     palette = palette_func()
     for i in range(MAX_INTENSITY + 1):
         colors[i] = palette[i]
-
-
-def initialize_palette_fire():
-    set_palette(palette_fire)
-
-
-def initialize_palette_cyber():
-    set_palette(palette_cyber)
-
-
-def initialize_palette_gray():
-    set_palette(palette_gray)
-
-
-def initialize_palette_cold_fire():
-    set_palette(palette_cold_fire)
-
-
-def initialize_palette_sunset():
-    set_palette(palette_sunset)
-
-
-def initialize_palette_toxic():
-    set_palette(palette_toxic)
-
-
-def initialize_palette_electric():
-    set_palette(palette_electric)
 
 
 # Perlin noise and fire spread
@@ -206,6 +192,6 @@ def render_tool_radius(mx: int, my: int, brush_radius: int, alpha: int):
 
 
 @ti.kernel
-def fire_rectangle(xmin: int, xmax: int, ymin: int, ymax: int):
+def fire_rectangle(xmin: int, xmax: int, ymin: int, ymax: int,intensity:float):
     for x, y in ti.ndrange((xmin, xmax + 1), (ymin, ymax + 1)):
         firePixels[x, y] = MAX_INTENSITY*intensity
