@@ -6,11 +6,10 @@ from typing import Dict
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
-from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QLabel,
-                               QMainWindow, QPushButton, QRadioButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
+                               QHBoxLayout, QLabel, QMainWindow, QPushButton,
+                               QRadioButton, QVBoxLayout, QWidget)
 
-import tools
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
                   initialize_palette_cold_fire, initialize_palette_cyber,
@@ -96,6 +95,18 @@ class FireWindow(QMainWindow):
             ToolType.FIRE_LINE: FireLineTool(),  # Add FireLineTool
             ToolType.FIRE_RECT: FireRectTool(),  # Add FireRectTool
         }
+
+        self.palettes = [
+            ("Fire", initialize_palette_fire),
+            ("Cyber", initialize_palette_cyber),
+            ("Gray", initialize_palette_gray),
+            ("Cold Fire", initialize_palette_cold_fire),
+            ("Sunset", initialize_palette_sunset),
+            ("Toxic", initialize_palette_toxic),
+            ("Electric", initialize_palette_electric),
+        ]
+        self.palette_idx = 0
+        self.palettes[self.palette_idx][1]()
         self.setWindowTitle("Fire Effect (PySide6)")
         self.label = QLabel(self)
         central_widget = QWidget(self)
@@ -111,17 +122,8 @@ class FireWindow(QMainWindow):
 
         self.resize(FIRE_WIDTH, FIRE_HEIGHT)
         initialize_fire()
-        self.palette_idx = 0
-        self.palette_functions = [
-            initialize_palette_fire,
-            initialize_palette_cyber,
-            initialize_palette_gray,
-            initialize_palette_cold_fire,
-            initialize_palette_sunset,
-            initialize_palette_toxic,
-            initialize_palette_electric,
-        ]
-        self.palette_functions[self.palette_idx]()
+        # Refactored palette as list of (name, function) tuples
+
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(16)  # ~60 FPS
@@ -150,6 +152,14 @@ class FireWindow(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
+
+        # --- Palette Dropdown ---
+        palette_combo = QComboBox(panel)
+        palette_combo.addItems([name for name, _ in self.palettes])
+        palette_combo.setCurrentIndex(self.palette_idx)
+        palette_combo.currentIndexChanged.connect(self.set_palette_idx)
+        layout.addWidget(palette_combo)
+        self.palette_combo = palette_combo
 
         # --- Mode Radio Buttons ---
         mode_group = QButtonGroup(panel)
@@ -218,7 +228,7 @@ class FireWindow(QMainWindow):
         firePixels.fill(0)
         initialize_fire()
         clear_fixed_pixels()
-        self.palette_functions[self.palette_idx]()
+        self.palettes[self.palette_idx][1]()
         self.update_tool_buttons()
 
     def clear_fire(self):
@@ -237,11 +247,11 @@ class FireWindow(QMainWindow):
         # Clear FireLineTool or FireRectTool state if leaving those modes
         if self.mode == ModeType.FIRE_LINE:
             s = self.tools[ToolType.FIRE_LINE]
-            assert type(s) == tools.FireLineTool
+            assert type(s) == FireLineTool
             s.clear_first_point()
         if self.mode == ModeType.FIRE_RECT:
             s = self.tools[ToolType.FIRE_RECT]
-            assert type(s) == tools.FireRectTool
+            assert type(s) == FireRectTool
             s.clear_first_point()
         self.mode = mode
         # Activate new mode
@@ -256,6 +266,12 @@ class FireWindow(QMainWindow):
             self.tools[rmb_tool].trigger_on()
             self.tools[lmb_tool].trigger_off()
         self.brush_changed = 0
+        self.update_tool_buttons()
+
+    def set_palette_idx(self, idx):
+        self.palette_idx = idx
+        self.palettes[self.palette_idx][1]()
+        self.palette_combo.setCurrentIndex(self.palette_idx)
         self.update_tool_buttons()
 
     def toggle_highlight_fixed(self):
@@ -281,6 +297,9 @@ class FireWindow(QMainWindow):
             )
         else:
             self.highlight_btn.setStyleSheet("")
+        # Update palette combo
+        if hasattr(self, "palette_combo"):
+            self.palette_combo.setCurrentIndex(self.palette_idx)
 
     def update_frame(self):
         self.current_time += 0.05
@@ -340,7 +359,7 @@ class FireWindow(QMainWindow):
             return
         if self.mode == ModeType.FIRE_RECT:
             fire_rect_tool = self.tools[ToolType.FIRE_RECT]
-            assert type(fire_rect_tool) == tools.FireRectTool
+            assert type(fire_rect_tool) == FireRectTool
             if event.button() == Qt.MouseButton.LeftButton:
                 fire_rect_tool.set_first_point(mx_int, my_int)
                 fire_rect_tool.trigger_off()
@@ -422,14 +441,11 @@ class FireWindow(QMainWindow):
         elif key == Qt.Key.Key_V:
             self.toggle_highlight_fixed()
         elif key == Qt.Key.Key_P:
-            self.palette_idx = (self.palette_idx + 1) % len(self.palette_functions)
-            self.palette_functions[self.palette_idx]()
-            print(
-                self.palette_functions[self.palette_idx]
-                .__name__.replace("initialize_palette_", "")
-                .capitalize()
-                .replace("_", " ")
-            )
+            self.palette_idx = (self.palette_idx + 1) % len(self.palettes)
+            self.palettes[self.palette_idx][1]()
+            if hasattr(self, "palette_combo"):
+                self.palette_combo.setCurrentIndex(self.palette_idx)
+            print(self.palettes[self.palette_idx][0])
         elif key == Qt.Key.Key_R:
             firePixels.fill(0)
             initialize_fire()
