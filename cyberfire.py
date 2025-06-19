@@ -355,7 +355,7 @@ class FireWindow(QMainWindow):
             elif event.button() == Qt.MouseButton.RightButton:
                 if fire_rect_tool.first_point is not None:
                     fire_rect_tool.trigger_on()
-                    fire_rect_tool.apply(mx_int, my_int, self.brush_radius, intensity)
+                    fire_rect_tool.apply(mx_int, my_int, intensity)
                     fire_rect_tool.trigger_off()
                     fire_rect_tool.clear_first_point()
                 self.pressing_rmb = True
@@ -371,7 +371,7 @@ class FireWindow(QMainWindow):
                     self.pressing_lmb = True
                 else:
                     fix_rect_tool.trigger_on()
-                    fix_rect_tool.apply(mx_int, my_int, self.brush_radius)
+                    fix_rect_tool.apply(mx_int, my_int)
                     fix_rect_tool.trigger_off()
                     fix_rect_tool.clear_first_point()
                     self.pressing_lmb = False
@@ -382,7 +382,7 @@ class FireWindow(QMainWindow):
                     self.pressing_rmb = True
                 else:
                     fix_rect_tool.trigger_on()
-                    fix_rect_tool.apply(mx_int, my_int, self.brush_radius)
+                    fix_rect_tool.apply(mx_int, my_int)
                     fix_rect_tool.trigger_off()
                     fix_rect_tool.clear_first_point()
                     self.pressing_rmb = False
