@@ -1,7 +1,7 @@
 import sys
 import time
-from typing import Dict
 from enum import Enum, auto
+from typing import Dict
 
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
@@ -10,17 +10,15 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QLabel,
                                QMainWindow, QPushButton, QRadioButton,
                                QVBoxLayout, QWidget)
 
+import tools
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
                   initialize_palette_cold_fire, initialize_palette_cyber,
                   initialize_palette_electric, initialize_palette_fire,
                   initialize_palette_gray, initialize_palette_sunset,
                   initialize_palette_toxic, render_tool_radius, update_image)
-from tools import (
-    FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool,
-    HighlightFixedTool, Tool, ToolType, FireLineTool
-)
-import tools
+from tools import (FireBrushTool, FireEraseTool, FireLineTool, FixBrushTool,
+                   FixEraseTool, HighlightFixedTool, Tool, ToolType)
 
 
 class ModeType(Enum):
@@ -190,8 +188,8 @@ class FireWindow(QMainWindow):
         self.modes[self.mode].deactivate(self.tools)
         # Clear FireLineTool state if leaving FireLine mode
         if self.mode == ModeType.FIRE_LINE:
-            s=self.tools[ToolType.FIRE_LINE]
-            assert type(s)==tools.FireLineTool
+            s = self.tools[ToolType.FIRE_LINE]
+            assert type(s) == tools.FireLineTool
             s.clear_first_point()
         self.mode = mode
         # Activate new mode
@@ -241,7 +239,10 @@ class FireWindow(QMainWindow):
                 tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
         # Show highlight if highlight_fixed is active or if fix mode is active
-        if self.tools[ToolType.HIGHLIGHT_FIXED].is_active() or self.mode == ModeType.FIX:
+        if (
+            self.tools[ToolType.HIGHLIGHT_FIXED].is_active()
+            or self.mode == ModeType.FIX
+        ):
             highlight_fixed_pixels()
         # Fade alpha from 80 to 0 over 2 seconds
         elapsed = time.time() - self.brush_changed
@@ -270,7 +271,7 @@ class FireWindow(QMainWindow):
         my_int = self.imy
         if self.mode == ModeType.FIRE_LINE:
             fire_line_tool = self.tools[ToolType.FIRE_LINE]
-            assert type(fire_line_tool)==FireLineTool
+            assert type(fire_line_tool) == FireLineTool
             if event.button() == Qt.MouseButton.LeftButton:
                 fire_line_tool.set_first_point(mx_int, my_int)
                 fire_line_tool.trigger_off()  # Don't draw yet
@@ -318,11 +319,11 @@ class FireWindow(QMainWindow):
     def mouseMoveEvent(self, event: QMouseEvent):
         self.update_mouse_position(event)
 
-    def update_mouse_position(self, event:QMouseEvent):
+    def update_mouse_position(self, event: QMouseEvent):
         x = event.position().x()
         y = event.position().y()
-        self.imx=x
-        self.imy=y
+        self.imx = x
+        self.imy = y
 
     def wheelEvent(self, event: QWheelEvent):
         now = time.time()

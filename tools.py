@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from typing import Optional
-from core import change_heat_at_position, highlight_fixed_pixels, set_fixed_pixels
+
+from core import (change_heat_at_position, highlight_fixed_pixels,
+                  set_fixed_pixels)
 
 
 class ToolType(Enum):
@@ -14,7 +16,8 @@ class ToolType(Enum):
 
 class Tool:
     registry = {}
-    tool_type:Optional[ToolType]
+    tool_type: Optional[ToolType]
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "tool_type"):
@@ -84,7 +87,7 @@ class FireLineTool(Tool):
     def clear_first_point(self):
         self.first_point = None
 
-    def apply(self, mx_int:int, my_int:int, brush_radius):
+    def apply(self, mx_int: int, my_int: int, brush_radius):
         # Only draw if first_point is set and this is the second click
         if self.first_point is not None:
             x0, y0 = self.first_point
