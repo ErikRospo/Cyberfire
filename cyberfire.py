@@ -1,6 +1,7 @@
 import sys
 import time
 from typing import Dict
+from enum import Enum, auto
 
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
@@ -15,38 +16,45 @@ from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   initialize_palette_electric, initialize_palette_fire,
                   initialize_palette_gray, initialize_palette_sunset,
                   initialize_palette_toxic, render_tool_radius, update_image)
-from tools import (FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool,
-                   HighlightFixedTool, Tool)
+from tools import (
+    FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool,
+    HighlightFixedTool, Tool, ToolType
+)
+
+
+class ModeType(Enum):
+    FIRE = auto()
+    FIX = auto()
 
 
 class Mode:
-    def __init__(self, lmb_tool, rmb_tool):
-        self.lmb_tool = lmb_tool
-        self.rmb_tool = rmb_tool
+    def __init__(self, lmb_tool_type, rmb_tool_type):
+        self.lmb_tool_type = lmb_tool_type
+        self.rmb_tool_type = rmb_tool_type
 
     def activate(self, tools):
         # Deactivate all tools except highlight
-        for name, tool in tools.items():
-            if name not in ("highlight_fixed",):
+        for ttype, tool in tools.items():
+            if ttype != ToolType.HIGHLIGHT_FIXED:
                 tool.trigger_off()
         return tools
 
     def deactivate(self, tools):
         # Deactivate all tools except highlight
-        for name, tool in tools.items():
-            if name not in ("highlight_fixed",):
+        for ttype, tool in tools.items():
+            if ttype != ToolType.HIGHLIGHT_FIXED:
                 tool.trigger_off()
         return tools
 
 
 class FireMode(Mode):
     def __init__(self):
-        super().__init__("fire_brush", "fire_erase")
+        super().__init__(ToolType.FIRE_BRUSH, ToolType.FIRE_ERASE)
 
 
 class FixMode(Mode):
     def __init__(self):
-        super().__init__("fix_brush", "fix_erase")
+        super().__init__(ToolType.FIX_BRUSH, ToolType.FIX_ERASE)
 
 
 class FireWindow(QMainWindow):
@@ -60,17 +68,17 @@ class FireWindow(QMainWindow):
         self.pressing_lmb = False
         self.pressing_rmb = False
         self.modes = {
-            "fire": FireMode(),
-            "fix": FixMode(),
+            ModeType.FIRE: FireMode(),
+            ModeType.FIX: FixMode(),
         }
-        self.mode = "fire"  # "fire" or "fix"
+        self.mode = ModeType.FIRE  # ModeType.FIRE or ModeType.FIX
 
-        self.tools: Dict[str, Tool] = {
-            "fire_brush": FireBrushTool(),
-            "fire_erase": FireEraseTool(),
-            "fix_brush": FixBrushTool(),
-            "fix_erase": FixEraseTool(),
-            "highlight_fixed": HighlightFixedTool(),
+        self.tools: Dict[ToolType, Tool] = {
+            ToolType.FIRE_BRUSH: FireBrushTool(),
+            ToolType.FIRE_ERASE: FireEraseTool(),
+            ToolType.FIX_BRUSH: FixBrushTool(),
+            ToolType.FIX_ERASE: FixEraseTool(),
+            ToolType.HIGHLIGHT_FIXED: HighlightFixedTool(),
         }
         self.setWindowTitle("Fire Effect (PySide6)")
         self.label = QLabel(self)
@@ -115,15 +123,15 @@ class FireWindow(QMainWindow):
         mode_group = QButtonGroup(panel)
         fire_radio = QRadioButton("Fire Mode")
         fix_radio = QRadioButton("Fix Mode")
-        fire_radio.setChecked(self.mode == "fire")
-        fix_radio.setChecked(self.mode == "fix")
+        fire_radio.setChecked(self.mode == ModeType.FIRE)
+        fix_radio.setChecked(self.mode == ModeType.FIX)
         mode_group.addButton(fire_radio)
         mode_group.addButton(fix_radio)
         fire_radio.toggled.connect(
-            lambda checked: self.set_mode("fire") if checked else None
+            lambda checked: self.set_mode(ModeType.FIRE) if checked else None
         )
         fix_radio.toggled.connect(
-            lambda checked: self.set_mode("fix") if checked else None
+            lambda checked: self.set_mode(ModeType.FIX) if checked else None
         )
         layout.addWidget(fire_radio)
         layout.addWidget(fix_radio)
@@ -133,7 +141,7 @@ class FireWindow(QMainWindow):
         # --- Highlight Fixed Button ---
         highlight_btn = QPushButton("Toggle Highlight Fixed")
         highlight_btn.setCheckable(True)
-        highlight_btn.setChecked(self.tools["highlight_fixed"].is_active())
+        highlight_btn.setChecked(self.tools[ToolType.HIGHLIGHT_FIXED].is_active())
         highlight_btn.clicked.connect(self.toggle_highlight_fixed)
         layout.addWidget(highlight_btn)
         self.highlight_btn = highlight_btn
@@ -151,8 +159,8 @@ class FireWindow(QMainWindow):
         # Activate new mode
         self.modes[self.mode].activate(self.tools)
         # Activate tool depending on mouse buttons
-        lmb_tool = self.modes[self.mode].lmb_tool
-        rmb_tool = self.modes[self.mode].rmb_tool
+        lmb_tool = self.modes[self.mode].lmb_tool_type
+        rmb_tool = self.modes[self.mode].rmb_tool_type
         if self.pressing_lmb:
             self.tools[lmb_tool].trigger_on()
             self.tools[rmb_tool].trigger_off()
@@ -163,7 +171,7 @@ class FireWindow(QMainWindow):
         self.update_tool_buttons()
 
     def toggle_highlight_fixed(self):
-        tool = self.tools["highlight_fixed"]
+        tool = self.tools[ToolType.HIGHLIGHT_FIXED]
         if tool.is_active():
             tool.trigger_off()
         else:
@@ -172,10 +180,10 @@ class FireWindow(QMainWindow):
 
     def update_tool_buttons(self):
         # Update radio buttons
-        self.fire_radio.setChecked(self.mode == "fire")
-        self.fix_radio.setChecked(self.mode == "fix")
+        self.fire_radio.setChecked(self.mode == ModeType.FIRE)
+        self.fix_radio.setChecked(self.mode == ModeType.FIX)
         # Update highlight button
-        active = self.tools["highlight_fixed"].is_active()
+        active = self.tools[ToolType.HIGHLIGHT_FIXED].is_active()
         self.highlight_btn.setChecked(active)
         if active:
             self.highlight_btn.setStyleSheet(
@@ -189,12 +197,12 @@ class FireWindow(QMainWindow):
         do_fire(self.current_time)
         mx_int = int(self.mx * FIRE_WIDTH)
         my_int = int(self.my * FIRE_HEIGHT)
-        for name, tool in self.tools.items():
+        for ttype, tool in self.tools.items():
             if tool.is_active():
                 tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
         # Show highlight if highlight_fixed is active or if fix mode is active
-        if self.tools["highlight_fixed"].is_active() or self.mode == "fix":
+        if self.tools[ToolType.HIGHLIGHT_FIXED].is_active() or self.mode == ModeType.FIX:
             highlight_fixed_pixels()
         # Fade alpha from 80 to 0 over 2 seconds
         elapsed = time.time() - self.brush_changed
@@ -216,8 +224,8 @@ class FireWindow(QMainWindow):
         self.label.setPixmap(QPixmap.fromImage(qimg))
 
     def mousePressEvent(self, event: QMouseEvent):
-        lmb_tool = self.modes[self.mode].lmb_tool
-        rmb_tool = self.modes[self.mode].rmb_tool
+        lmb_tool = self.modes[self.mode].lmb_tool_type
+        rmb_tool = self.modes[self.mode].rmb_tool_type
         if event.button() == Qt.MouseButton.LeftButton:
             self.tools[lmb_tool].trigger_on()
             self.tools[rmb_tool].trigger_off()
@@ -231,8 +239,8 @@ class FireWindow(QMainWindow):
         self.update_tool_buttons()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        lmb_tool = self.modes[self.mode].lmb_tool
-        rmb_tool = self.modes[self.mode].rmb_tool
+        lmb_tool = self.modes[self.mode].lmb_tool_type
+        rmb_tool = self.modes[self.mode].rmb_tool_type
         if event.button() == Qt.MouseButton.LeftButton:
             self.tools[lmb_tool].trigger_off()
             self.pressing_lmb = False
@@ -262,9 +270,9 @@ class FireWindow(QMainWindow):
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
         if key == Qt.Key.Key_B:
-            self.set_mode("fire")
+            self.set_mode(ModeType.FIRE)
         elif key == Qt.Key.Key_F:
-            self.set_mode("fix")
+            self.set_mode(ModeType.FIX)
         elif key == Qt.Key.Key_V:
             self.toggle_highlight_fixed()
         elif key == Qt.Key.Key_P:

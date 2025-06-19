@@ -1,14 +1,23 @@
+from enum import Enum, auto
+from typing import Optional
 from core import change_heat_at_position, highlight_fixed_pixels, set_fixed_pixels
 
 
-class Tool:
-    name = "BaseTool"
-    registry = {}
+class ToolType(Enum):
+    FIRE_BRUSH = auto()
+    FIRE_ERASE = auto()
+    FIX_BRUSH = auto()
+    FIX_ERASE = auto()
+    HIGHLIGHT_FIXED = auto()
 
+
+class Tool:
+    registry = {}
+    tool_type:Optional[ToolType]
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        if hasattr(cls, "name") and cls.name != "BaseTool":
-            Tool.registry[cls.name] = cls
+        if hasattr(cls, "tool_type"):
+            Tool.registry[cls.tool_type] = cls
 
     def __init__(self):
         self.active = False
@@ -27,46 +36,35 @@ class Tool:
 
 
 class FireBrushTool(Tool):
-    name = "Fire Paint"
+    tool_type = ToolType.FIRE_BRUSH
 
     def apply(self, mx_int, my_int, brush_radius):
         change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=1)
 
 
 class FireEraseTool(Tool):
-    name = "Fire Erase"
+    tool_type = ToolType.FIRE_ERASE
 
     def apply(self, mx_int, my_int, brush_radius):
         change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=-1)
 
 
 class FixBrushTool(Tool):
-    name = "Fix Brush"
+    tool_type = ToolType.FIX_BRUSH
 
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 1)
 
 
 class FixEraseTool(Tool):
-    name = "Fix Erase"
+    tool_type = ToolType.FIX_ERASE
 
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 0)
 
 
 class HighlightFixedTool(Tool):
-    name = "Highlight Fixed"
+    tool_type = ToolType.HIGHLIGHT_FIXED
 
     def apply(self, _mx_int, _my_int, _brush_radius):
         highlight_fixed_pixels()
-
-
-def get_tool_by_name(name):
-    cls = Tool.registry.get(name)
-    if cls:
-        return cls()
-    raise ValueError(f"No tool registered with name: {name}")
-
-
-def list_tool_names():
-    return list(Tool.registry.keys())
