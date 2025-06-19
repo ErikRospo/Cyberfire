@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from typing import Optional
 
-from core import (change_heat_at_position, highlight_fixed_pixels,
+from core import (change_heat_at_position, fire_rectangle, highlight_fixed_pixels,
                   set_fixed_pixels)
 
 
@@ -12,6 +12,7 @@ class ToolType(Enum):
     FIX_ERASE = auto()
     HIGHLIGHT_FIXED = auto()
     FIRE_LINE = auto()  # New tool type
+    FIRE_RECT = auto()  # Rectangle fire tool
 
 
 class Tool:
@@ -119,3 +120,29 @@ class FireLineTool(Tool):
                     y += sy
                 change_heat_at_position(x, y, radius=brush_radius, multiplier=1)
             self.clear_first_point()
+
+
+class FireRectTool(Tool):
+    tool_type = ToolType.FIRE_RECT
+
+    def __init__(self):
+        super().__init__()
+        self.first_point = None
+
+    def set_first_point(self, mx_int:int, my_int:int):
+        self.first_point = (mx_int, my_int)
+
+    def clear_first_point(self):
+        self.first_point = None
+
+    def apply(self, mx_int: int, my_int: int, _brush_radius:int):
+        # Only draw if first_point is set and this is the second click
+        if self.first_point is not None:
+            x0, y0 = self.first_point
+            x1, y1 = mx_int, my_int
+
+            xmin, xmax = sorted([x0, x1])
+            ymin, ymax = sorted([y0, y1])
+            fire_rectangle(xmin,xmax,ymin,ymax)
+            self.clear_first_point()
+
