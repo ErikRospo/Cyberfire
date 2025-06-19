@@ -11,7 +11,7 @@ from PySide6.QtGui import QImage, QPixmap, QMouseEvent, QWheelEvent, QKeyEvent
 
 from core import (
     firePixels, image,
-    do_fire, update_image, initialize_fire, clear_fixed_pixels,
+    do_fire, render_tool_radius, update_image, initialize_fire, clear_fixed_pixels,
     highlight_fixed_pixels,
     initialize_palette_fire, initialize_palette_cyber, initialize_palette_gray,
     initialize_palette_cold_fire, initialize_palette_sunset, initialize_palette_toxic, initialize_palette_electric,
@@ -67,8 +67,7 @@ class FireWindow(QMainWindow):
             if tool.is_active():
                 tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
-        if self.tools["highlight_fixed"].is_active():
-            highlight_fixed_pixels()
+        render_tool_radius(int(self.mx*FIRE_WIDTH),int((1-self.my)*FIRE_HEIGHT),self.brush_radius)        
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img=np.rot90(np_img).copy()
@@ -105,7 +104,6 @@ class FireWindow(QMainWindow):
         self.my = np.clip(y / FIRE_HEIGHT, 0, 1)
 
     def wheelEvent(self, event: QWheelEvent):
-        print(event.angleDelta())
         now = time.time()
         delta_y = event.angleDelta().y()
         if now - self.brush_changed < 0.5:
@@ -113,7 +111,6 @@ class FireWindow(QMainWindow):
         else:
             accel = 1
         delta_with_accel = int(delta_y * accel / 32)
-        print(f"{delta_y=} {delta_with_accel=} {accel=} {self.brush_radius=}")
         self.brush_radius += delta_with_accel
         self.brush_radius = max(1, min(self.brush_radius, 400))
         self.brush_changed = now
