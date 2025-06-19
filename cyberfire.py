@@ -103,10 +103,7 @@ def main():
         my_int = int((1 - my) * FIRE_HEIGHT)
         for name, tool in tools.items():
             if tool.is_active():
-                if name == "highlight_fixed":
-                    tool.apply()
-                else:
-                    tool.apply(mx_int, my_int, brush_radius)
+                tool.apply(mx_int, my_int, brush_radius)
         update_image()
         if tools["highlight_fixed"].is_active():
             highlight_fixed_pixels()

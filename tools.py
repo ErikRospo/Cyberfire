@@ -53,5 +53,5 @@ class HighlightFixedTool(Tool):
     def __init__(self):
         super().__init__("Highlight Fixed")
 
-    def apply(self):
+    def apply(self,_mx_int,_my_int,_brush_radius):
         highlight_fixed_pixels()
