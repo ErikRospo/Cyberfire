@@ -122,6 +122,22 @@ class FireWindow(QMainWindow):
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
 
+    @property
+    def imx(self):
+        return int(self.mx * FIRE_WIDTH)
+
+    @imx.setter
+    def imx(self, value):
+        self.mx = np.clip(value / FIRE_WIDTH, 0, 1)
+
+    @property
+    def imy(self):
+        return int(self.my * FIRE_HEIGHT)
+
+    @imy.setter
+    def imy(self, value):
+        self.my = np.clip(value / FIRE_HEIGHT, 0, 1)
+
     def init_sidepanel(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -218,8 +234,8 @@ class FireWindow(QMainWindow):
     def update_frame(self):
         self.current_time += 0.05
         do_fire(self.current_time)
-        mx_int = int(self.mx * FIRE_WIDTH)
-        my_int = int(self.my * FIRE_HEIGHT)
+        mx_int = self.imx
+        my_int = self.imy
         for ttype, tool in self.tools.items():
             if tool.is_active():
                 tool.apply(mx_int, my_int, self.brush_radius)
@@ -232,7 +248,7 @@ class FireWindow(QMainWindow):
         if elapsed < 2:
             alpha = int(80 * min(1, (1 - elapsed / 2)))
             render_tool_radius(
-                int(self.mx * FIRE_WIDTH),
+                self.imx,
                 int((1 - self.my) * FIRE_HEIGHT),
                 self.brush_radius,
                 alpha,
@@ -247,10 +263,11 @@ class FireWindow(QMainWindow):
         self.label.setPixmap(QPixmap.fromImage(qimg))
 
     def mousePressEvent(self, event: QMouseEvent):
+        self.update_mouse_position(event)
         lmb_tool = self.modes[self.mode].lmb_tool_type
         rmb_tool = self.modes[self.mode].rmb_tool_type
-        mx_int = int(self.mx * FIRE_WIDTH)
-        my_int = int(self.my * FIRE_HEIGHT)
+        mx_int = self.imx
+        my_int = self.imy
         if self.mode == ModeType.FIRE_LINE:
             fire_line_tool = self.tools[ToolType.FIRE_LINE]
             assert type(fire_line_tool)==FireLineTool
@@ -280,6 +297,7 @@ class FireWindow(QMainWindow):
         self.update_tool_buttons()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        self.update_mouse_position(event)
         if self.mode == ModeType.FIRE_LINE:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.pressing_lmb = False
@@ -298,10 +316,13 @@ class FireWindow(QMainWindow):
         self.update_tool_buttons()
 
     def mouseMoveEvent(self, event: QMouseEvent):
+        self.update_mouse_position(event)
+
+    def update_mouse_position(self, event:QMouseEvent):
         x = event.position().x()
         y = event.position().y()
-        self.mx = np.clip(x / FIRE_WIDTH, 0, 1)
-        self.my = np.clip(y / FIRE_HEIGHT, 0, 1)
+        self.imx=x
+        self.imy=y
 
     def wheelEvent(self, event: QWheelEvent):
         now = time.time()
