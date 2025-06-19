@@ -1,12 +1,12 @@
 import time
 import taichi as ti
 from core import (
-    firePixels, fixedPixels, image, colors,
+    firePixels, image,
     do_fire, update_image, initialize_fire, clear_fixed_pixels,
     highlight_fixed_pixels,
     initialize_palette_fire, initialize_palette_cyber, initialize_palette_gray,
     initialize_palette_cold_fire, initialize_palette_sunset, initialize_palette_toxic, initialize_palette_electric,
-    FIRE_WIDTH, FIRE_HEIGHT, MAX_INTENSITY
+    FIRE_WIDTH, FIRE_HEIGHT
 )
 from tools import FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool, HighlightFixedTool
 
