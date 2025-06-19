@@ -7,7 +7,7 @@ This code was originally inspired by [Fabien Sanglard's blog](https://fabiensang
 
 - Real-time fire simulation using Taichi's GPU acceleration
 - Multiple color palettes: fire, cyber, gray, cold fire, sunset, toxic, electric
-- Interactive heat injection with mouse
+- Interactive heat injection/removal with mouse
 - Palette switching with keyboard
 
 ## Requirements
@@ -18,14 +18,14 @@ This code was originally inspired by [Fabien Sanglard's blog](https://fabiensang
 ## Usage
 
 1. Install dependencies:
-    ```sh
-    pip install -r requirements.txt
-    ```
+```sh
+pip install -r requirements.txt
+```
 
 2. Run the simulation:
-    ```sh
-    python cyberfire.py
-    ```
+```sh
+python cyberfire.py
+```
 
 ## Controls
 
