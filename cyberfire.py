@@ -1,6 +1,5 @@
 import sys
 import time
-from enum import Enum, auto
 from typing import Dict
 
 import numpy as np
@@ -13,7 +12,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, get_palette_list, highlight_fixed_pixels, image,
                   initialize_fire, render_tool_radius, update_image)
-from modes import FireLineMode, FireMode, FireRectMode, FixMode, FixRectMode, ModeType
+from modes import FireLineMode, FireMode, FireRectMode, FixMode, FixRectMode, Mode, ModeType
 from tools import (FireBrushTool, FireEraseTool, FireLineTool, FireRectTool,
                    FixBrushTool, FixEraseTool, HighlightFixedTool, Tool,
                    ToolType, FixRectTool) 
@@ -30,7 +29,7 @@ class FireWindow(QMainWindow):
         self.pressing_lmb = False
         self.pressing_rmb = False
         self.intensity_percent = 100
-        self.modes = {
+        self.modes:Dict[ModeType,Mode] = {
             ModeType.FIRE: FireMode(),
             ModeType.FIX: FixMode(),
             ModeType.FIRE_LINE: FireLineMode(),
@@ -416,21 +415,7 @@ class FireWindow(QMainWindow):
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         self.update_mouse_position(event)
-        if self.mode == ModeType.FIRE_LINE:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.pressing_lmb = False
-            elif event.button() == Qt.MouseButton.RightButton:
-                self.pressing_rmb = False
-            self.update_tool_buttons()
-            return
-        if self.mode == ModeType.FIRE_RECT:
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.pressing_lmb = False
-            elif event.button() == Qt.MouseButton.RightButton:
-                self.pressing_rmb = False
-            self.update_tool_buttons()
-            return
-        if self.mode == ModeType.FIX_RECT:
+        if self.mode in (ModeType.FIRE_LINE, ModeType.FIRE_RECT, ModeType.FIX_RECT):
             if event.button() == Qt.MouseButton.LeftButton:
                 self.pressing_lmb = False
             elif event.button() == Qt.MouseButton.RightButton:
