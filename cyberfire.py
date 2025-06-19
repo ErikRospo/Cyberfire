@@ -13,10 +13,10 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, get_palette_list, highlight_fixed_pixels, image,
                   initialize_fire, render_tool_radius, update_image)
-from modes import FireLineMode, FireMode, FireRectMode, FixMode, ModeType
+from modes import FireLineMode, FireMode, FireRectMode, FixMode, FixRectMode, ModeType
 from tools import (FireBrushTool, FireEraseTool, FireLineTool, FireRectTool,
                    FixBrushTool, FixEraseTool, HighlightFixedTool, Tool,
-                   ToolType)
+                   ToolType, FixRectTool) 
 
 
 class FireWindow(QMainWindow):
@@ -35,6 +35,7 @@ class FireWindow(QMainWindow):
             ModeType.FIX: FixMode(),
             ModeType.FIRE_LINE: FireLineMode(),
             ModeType.FIRE_RECT: FireRectMode(),
+            ModeType.FIX_RECT: FixRectMode(), 
         }
         self.mode = ModeType.FIRE  # Default mode
 
@@ -46,6 +47,7 @@ class FireWindow(QMainWindow):
             ToolType.HIGHLIGHT_FIXED: HighlightFixedTool(),
             ToolType.FIRE_LINE: FireLineTool(),
             ToolType.FIRE_RECT: FireRectTool(),
+            ToolType.FIX_RECT: FixRectTool(), 
         }
 
         # Use palette list from core.py
@@ -102,7 +104,7 @@ class FireWindow(QMainWindow):
         # --- Intensity Slider ---
         intensity_label = QLabel(f"Intensity: {self.intensity_percent}%", panel)
         intensity_slider = QSlider(Qt.Orientation.Horizontal, panel)
-        intensity_slider.setMinimum(0)
+        intensity_slider.setMinimum(20)
         intensity_slider.setMaximum(100)
         intensity_slider.setValue(self.intensity_percent)
         intensity_slider.setTickInterval(10)
@@ -129,14 +131,17 @@ class FireWindow(QMainWindow):
         fix_radio = QRadioButton("Fix Mode")
         fireline_radio = QRadioButton("Fire Line Mode")
         firerect_radio = QRadioButton("Fire Rect Mode")
+        fixrect_radio = QRadioButton("Fix Rect Mode")
         fire_radio.setChecked(self.mode == ModeType.FIRE)
         fix_radio.setChecked(self.mode == ModeType.FIX)
         fireline_radio.setChecked(self.mode == ModeType.FIRE_LINE)
         firerect_radio.setChecked(self.mode == ModeType.FIRE_RECT)
+        fixrect_radio.setChecked(self.mode == ModeType.FIX_RECT)
         mode_group.addButton(fire_radio)
         mode_group.addButton(fix_radio)
         mode_group.addButton(fireline_radio)
         mode_group.addButton(firerect_radio)
+        mode_group.addButton(fixrect_radio)
         fire_radio.toggled.connect(
             lambda checked: self.set_mode(ModeType.FIRE) if checked else None
         )
@@ -149,14 +154,19 @@ class FireWindow(QMainWindow):
         firerect_radio.toggled.connect(
             lambda checked: self.set_mode(ModeType.FIRE_RECT) if checked else None
         )
+        fixrect_radio.toggled.connect(
+            lambda checked: self.set_mode(ModeType.FIX_RECT) if checked else None
+        )
         layout.addWidget(fire_radio)
         layout.addWidget(fix_radio)
         layout.addWidget(fireline_radio)
         layout.addWidget(firerect_radio)
+        layout.addWidget(fixrect_radio)
         self.fire_radio = fire_radio
         self.fix_radio = fix_radio
         self.fireline_radio = fireline_radio
         self.firerect_radio = firerect_radio
+        self.fixrect_radio = fixrect_radio 
 
         # --- Highlight Fixed Button ---
         highlight_btn = QPushButton("Toggle Highlight Fixed")
@@ -220,6 +230,10 @@ class FireWindow(QMainWindow):
             s = self.tools[ToolType.FIRE_RECT]
             assert type(s) == FireRectTool  # Keep Pylance happy
             s.clear_first_point()
+        if self.mode == ModeType.FIX_RECT:
+            s = self.tools[ToolType.FIX_RECT]
+            assert type(s) == FixRectTool
+            s.clear_first_point()
         self.mode = mode
         # Activate new mode
         self.modes[self.mode].activate(self.tools)
@@ -255,6 +269,7 @@ class FireWindow(QMainWindow):
         self.fix_radio.setChecked(self.mode == ModeType.FIX)
         self.fireline_radio.setChecked(self.mode == ModeType.FIRE_LINE)
         self.firerect_radio.setChecked(self.mode == ModeType.FIRE_RECT)
+        self.fixrect_radio.setChecked(self.mode == ModeType.FIX_RECT)
         # Update highlight button
         active = self.tools[ToolType.HIGHLIGHT_FIXED].is_active()
         self.highlight_btn.setChecked(active)
@@ -344,6 +359,33 @@ class FireWindow(QMainWindow):
                 self.pressing_rmb = True
             self.update_tool_buttons()
             return
+        if self.mode == ModeType.FIX_RECT:
+            fix_rect_tool = self.tools[ToolType.FIX_RECT]
+            assert type(fix_rect_tool) == FixRectTool
+            if event.button() == Qt.MouseButton.LeftButton:
+                if fix_rect_tool.first_point is None:
+                    fix_rect_tool.set_first_point(mx_int, my_int, erase_mode=False)
+                    fix_rect_tool.trigger_off()
+                    self.pressing_lmb = True
+                else:
+                    fix_rect_tool.trigger_on()
+                    fix_rect_tool.apply(mx_int, my_int, self.brush_radius)
+                    fix_rect_tool.trigger_off()
+                    fix_rect_tool.clear_first_point()
+                    self.pressing_lmb = False
+            elif event.button() == Qt.MouseButton.RightButton:
+                if fix_rect_tool.first_point is None:
+                    fix_rect_tool.set_first_point(mx_int, my_int, erase_mode=True)
+                    fix_rect_tool.trigger_off()
+                    self.pressing_rmb = True
+                else:
+                    fix_rect_tool.trigger_on()
+                    fix_rect_tool.apply(mx_int, my_int, self.brush_radius)
+                    fix_rect_tool.trigger_off()
+                    fix_rect_tool.clear_first_point()
+                    self.pressing_rmb = False
+            self.update_tool_buttons()
+            return
         if event.button() == Qt.MouseButton.LeftButton:
             self.tools[lmb_tool].trigger_on()
             self.tools[rmb_tool].trigger_off()
@@ -382,6 +424,13 @@ class FireWindow(QMainWindow):
             self.update_tool_buttons()
             return
         if self.mode == ModeType.FIRE_RECT:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.pressing_lmb = False
+            elif event.button() == Qt.MouseButton.RightButton:
+                self.pressing_rmb = False
+            self.update_tool_buttons()
+            return
+        if self.mode == ModeType.FIX_RECT:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.pressing_lmb = False
             elif event.button() == Qt.MouseButton.RightButton:

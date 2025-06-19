@@ -2,7 +2,7 @@ from enum import Enum, auto
 from typing import Optional
 
 from core import (change_heat_at_position, fire_rectangle,
-                  highlight_fixed_pixels, set_fixed_pixels)
+                  highlight_fixed_pixels, set_fixed_pixels, set_fixed_pixels_rect)
 
 
 class ToolType(Enum):
@@ -13,6 +13,7 @@ class ToolType(Enum):
     HIGHLIGHT_FIXED = auto()
     FIRE_LINE = auto()
     FIRE_RECT = auto()
+    FIX_RECT = auto()
 
 
 class Tool:
@@ -155,4 +156,33 @@ class FireRectTool(Tool):
             ymin, ymax = sorted([y0, y1])
             # Draw the rectangle with intensity percent
             fire_rectangle(xmin, xmax, ymin, ymax, intensity)
+            self.clear_first_point()
+
+
+class FixRectTool(Tool):
+    tool_type = ToolType.FIX_RECT
+
+    def __init__(self):
+        super().__init__()
+        self.first_point = None
+        self.erase_mode = False
+
+    def set_first_point(self, mx_int: int, my_int: int, erase_mode: bool = False):
+        self.first_point = (mx_int, my_int)
+        self.erase_mode = erase_mode
+
+    def clear_first_point(self):
+        self.first_point = None
+        self.erase_mode = False
+
+    def apply(self, mx_int: int, my_int: int, _brush_radius: int, _intensity: float = 1):
+        # Only draw if first_point is set and this is the second click
+        if self.first_point is not None:
+            x0, y0 = self.first_point
+            x1, y1 = mx_int, my_int
+            xmin, xmax = sorted([x0, x1])
+            ymin, ymax = sorted([y0, y1])
+            # Set or clear fixed pixels in the rectangle
+    
+            set_fixed_pixels_rect(xmin, ymin, xmax - xmin + 1, ymax - ymin + 1, 0 if self.erase_mode else 1)
             self.clear_first_point()

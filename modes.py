@@ -8,6 +8,7 @@ class ModeType(Enum):
     FIX = auto()
     FIRE_LINE = auto()
     FIRE_RECT = auto()
+    FIX_RECT = auto()
 
 
 class Mode:
@@ -48,3 +49,8 @@ class FireLineMode(Mode):
 class FireRectMode(Mode):
     def __init__(self):
         super().__init__(ToolType.FIRE_RECT, ToolType.FIRE_RECT)
+
+
+class FixRectMode(Mode):
+    def __init__(self):
+        super().__init__(ToolType.FIX_RECT, ToolType.FIX_RECT)
