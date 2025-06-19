@@ -130,7 +130,7 @@ class FireWindow(QMainWindow):
 
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
-        self.label.mouseMoveEvent=self.mouseMoveEvent
+        self.label.mouseMoveEvent = self.mouseMoveEvent
 
     @property
     def imx(self):
@@ -415,7 +415,7 @@ class FireWindow(QMainWindow):
     def mouseMoveEvent(self, event: QMouseEvent):
         self.update_mouse_position(event)
 
-    def update_mouse_position(self, event: QMouseEvent|QWheelEvent):
+    def update_mouse_position(self, event: QMouseEvent | QWheelEvent):
         x = event.position().x()
         y = event.position().y()
         self.imx = x
