@@ -5,9 +5,9 @@ from typing import Dict
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
-from PySide6.QtWidgets import (QApplication, QDockWidget, QLabel, QMainWindow,
-                               QPushButton, QSizePolicy, QVBoxLayout, QWidget,
-                               QRadioButton, QButtonGroup, QHBoxLayout)
+from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QPushButton,
+                                QVBoxLayout, QWidget, QRadioButton,
+                               QButtonGroup, QHBoxLayout)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
@@ -22,9 +22,35 @@ from tools import (FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool,
 class FireWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.current_time = 0
+        self.brush_radius = 25
+        self.brush_changed = time.time() - 10
+        self.mx = 0.5
+        self.my = 0.5
+        self.pressing_lmb = False
+        self.pressing_rmb = False
+        self.mode = "fire"  # "fire" or "fix"
+
+        self.tools: Dict[str, Tool] = {
+            "fire_brush": FireBrushTool(),
+            "fire_erase": FireEraseTool(),
+            "fix_brush": FixBrushTool(),
+            "fix_erase": FixEraseTool(),
+            "highlight_fixed": HighlightFixedTool(),
+        }
         self.setWindowTitle("Fire Effect (PySide6)")
         self.label = QLabel(self)
-        self.setCentralWidget(self.label)
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        # --- Sidepanel UI ---
+        self.tool_buttons = {}
+        self.sidepanel = self.init_sidepanel()
+        main_layout.addWidget(self.label, stretch=1)
+        main_layout.addWidget(self.sidepanel)
+
         self.resize(FIRE_WIDTH, FIRE_HEIGHT)
         initialize_fire()
         self.palette_idx = 0
@@ -41,34 +67,11 @@ class FireWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(16)  # ~60 FPS
-        self.current_time = 0
-        self.brush_radius = 25
-        self.brush_changed = time.time() - 10
-        self.mx = 0.5
-        self.my = 0.5
-        self.tools: Dict[str, Tool] = {
-            "fire_brush": FireBrushTool(),
-            "fire_erase": FireEraseTool(),
-            "fix_brush": FixBrushTool(),
-            "fix_erase": FixEraseTool(),
-            "highlight_fixed": HighlightFixedTool(),
-        }
+
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
-        self.pressing_lmb = False
-        self.pressing_rmb = False
-        self.mode = "fire"  # "fire" or "fix"
-
-        # --- Sidepanel UI ---
-        self.tool_buttons = {}
-        self.init_sidepanel()
 
     def init_sidepanel(self):
-        dock = QDockWidget("Tools", self)
-        dock.setFeatures(
-            QDockWidget.DockWidgetFeature.DockWidgetMovable
-            | QDockWidget.DockWidgetFeature.DockWidgetFloatable
-        )
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -99,9 +102,7 @@ class FireWindow(QMainWindow):
 
         layout.addStretch(1)
         panel.setLayout(layout)
-        dock.setWidget(panel)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
-        self.update_tool_buttons()
+        return panel
 
     def set_mode(self, mode):
         if mode == self.mode:
@@ -151,11 +152,7 @@ class FireWindow(QMainWindow):
             self.highlight_btn.setStyleSheet("background-color: #aaf; font-weight: bold;")
         else:
             self.highlight_btn.setStyleSheet("")
-        # No more per-tool buttons
 
-    def select_tool(self, tool_key):
-        # No longer used, but kept for compatibility if called elsewhere
-        pass
 
     def update_frame(self):
         self.current_time += 0.05
