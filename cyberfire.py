@@ -16,6 +16,7 @@ ti.init(arch=ti.gpu)
 
 # Fire simulation field: (width, height)
 firePixels = ti.field(dtype=ti.i32, shape=(FIRE_WIDTH, FIRE_HEIGHT))
+fixedPixels=ti.field(dtype=ti.i32,shape=(FIRE_WIDTH,FIRE_HEIGHT))
 # Image: (width, height, 3)
 image = ti.field(dtype=ti.u8, shape=(FIRE_WIDTH, FIRE_HEIGHT, 3))
 # Color palette
@@ -144,8 +145,9 @@ def spread_fire(x: int, y: int, time: float):
         decay = int(ti.random() * DECAY_MULT) + 1
         rand_intensity = int(ti.random() * ADD_MULT)
         new_intensity = ti.max(0, below_intensity - decay + rand_intensity)
-
-        firePixels[dst_x, y] = new_intensity
+        if fixedPixels[dst_x,y]==0:
+            firePixels[dst_x, y] = new_intensity
+    
 
 
 @ti.kernel
@@ -165,7 +167,15 @@ def change_heat_at_position(mx: int, my: int, radius: int, multiplier: int):
                 # Add intensity falloff based on distance (optional)
                 delta = int(MAX_INTENSITY * (1 - dist / radius)) * multiplier
                 firePixels[x, y] = ti.min(MAX_INTENSITY, firePixels[x, y] + delta)
-
+@ti.kernel
+def set_fixed_pixels(mx: int, my: int, radius: int,state:int):
+    for dx, dy in ti.ndrange((-radius, radius), (-radius, radius)):
+        x = mx + dx
+        y = my + dy
+        if 0 <= x < FIRE_WIDTH and 0 <= y < FIRE_HEIGHT:
+            dist = (dx * dx + dy * dy) ** 0.5
+            if dist <= radius:
+                fixedPixels[x,y]=state
 
 @ti.kernel
 def update_image():
@@ -180,6 +190,55 @@ def initialize_fire():
     for x in range(FIRE_WIDTH):
         firePixels[x, FIRE_HEIGHT - 1] = MAX_INTENSITY  # Bottom row
 
+@ti.kernel
+def clear_fixed_pixels():
+    for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT):
+        fixedPixels[x,y]=0
+        
+class Tool:
+    def __init__(self, name):
+        self.name = name
+        self.active = False
+
+    def trigger_on(self):
+        self.active = True
+
+    def trigger_off(self):
+        self.active = False
+
+    def is_active(self):
+        return self.active
+
+    def apply(self, *args, **kwargs):
+        pass
+
+class FireBrushTool(Tool):
+    def __init__(self):
+        super().__init__("Fire Paint")
+
+    def apply(self, mx_int, my_int, brush_radius):
+        change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=1)
+
+class FireEraseTool(Tool):
+    def __init__(self):
+        super().__init__("Fire Erase")
+
+    def apply(self, mx_int, my_int, brush_radius):
+        change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=-1)
+
+class FixBrushTool(Tool):
+    def __init__(self):
+        super().__init__("Fix Brush")
+
+    def apply(self, mx_int, my_int, brush_radius):
+        set_fixed_pixels(mx_int, my_int, brush_radius, 1)
+
+class FixEraseTool(Tool):
+    def __init__(self):
+        super().__init__("Fix Erase")
+
+    def apply(self, mx_int, my_int, brush_radius):
+        set_fixed_pixels(mx_int, my_int, brush_radius, 0)
 
 def main():
     current_time = 0
@@ -199,10 +258,17 @@ def main():
 
     palette_functions[palette_idx]()
     gui = ti.GUI("Fire Effect", res=(FIRE_WIDTH, FIRE_HEIGHT))  # type: ignore
-    mouse_button_down = False
-    rmb_down = False
     brush_radius = 25  # Initial brush radius
     brush_changed = time.time() - 10
+
+    # Tool instances
+    tools = {
+        "fire_brush": FireBrushTool(),
+        "fire_erase": FireEraseTool(),
+        "fix_brush": FixBrushTool(),
+        "fix_erase": FixEraseTool(),
+    }
+
     while gui.running:
         current_time += 0.05
 
@@ -210,16 +276,43 @@ def main():
         for event in gui.get_events():
             if event.key == ti.GUI.LMB:
                 if event.type == ti.GUI.PRESS:
-                    mouse_button_down = True
+                    tools["fire_brush"].trigger_on()
+                    tools["fire_erase"].trigger_off()
                     brush_changed = 0
                 if event.type == ti.GUI.RELEASE:
-                    mouse_button_down = False
+                    tools["fire_brush"].trigger_off()
             if event.key == ti.GUI.RMB:
                 if event.type == ti.GUI.PRESS:
-                    rmb_down = True
+                    tools["fire_erase"].trigger_on()
+                    tools["fire_brush"].trigger_off()
                     brush_changed = 0
                 if event.type == ti.GUI.RELEASE:
-                    rmb_down = False
+                    tools["fire_erase"].trigger_off()
+            if event.key == "f":
+                if event.type == ti.GUI.PRESS:
+                    tools["fix_brush"].trigger_on()
+                    tools["fix_erase"].trigger_off()
+                    brush_changed = 0
+                if event.type == ti.GUI.RELEASE:
+                    tools["fix_brush"].trigger_off()
+            if event.key == "u":
+                if event.type == ti.GUI.PRESS:
+                    tools["fix_erase"].trigger_on()
+                    tools["fix_brush"].trigger_off()
+                    brush_changed = 0
+                if event.type == ti.GUI.RELEASE:
+                    tools["fix_erase"].trigger_off()
+                
+                
+            if event.key == ti.GUI.WHEEL:
+                now = time.time()
+                if now - brush_changed < 0.5:
+                    accel = 1 / (now - brush_changed + 0.25)
+                else:
+                    accel = 1
+                brush_radius += int(event.delta[1] * accel / 32)
+                brush_radius = max(1, min(brush_radius, 400))
+                brush_changed = now
             if event.key == "p" and event.type == ti.GUI.PRESS:
                 palette_idx += 1
                 palette_idx %= len(palette_functions)
@@ -233,31 +326,23 @@ def main():
             if event.key == "r" and event.type == ti.GUI.PRESS:
                 firePixels.fill(0)
                 initialize_fire()
-            if event.key == ti.GUI.WHEEL:
-                # Accelerating scrolling: increase speed if scrolling repeatedly
-                now = time.time()
-                if now - brush_changed < 0.5:
-                    accel = 1 / (now - brush_changed + 0.25)
-                else:
-                    accel = 1
-                brush_radius += int(event.delta[1] * accel / 32)
-                brush_radius = max(1, min(brush_radius, 400))  # Clamp radius
-                brush_changed = now
-        mx, my = gui.get_cursor_pos()  # normalized [0,1]
-        mx_int = int(mx * FIRE_WIDTH)
-        my_int = int((1 - my) * FIRE_HEIGHT)  # flip y axis because image y is flipped
-        if mouse_button_down:
-            change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=1)
-        if rmb_down:
-            change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=-1)
-        update_image()
+                clear_fixed_pixels()
 
-        gui.set_image(image)
-        if time.time() - brush_changed < 5 and not mouse_button_down and not rmb_down:
+        mx, my = gui.get_cursor_pos()
+        mx_int = int(mx * FIRE_WIDTH)
+        my_int = int((1 - my) * FIRE_HEIGHT)
+
+        # Apply active tools
+        for tool in tools.values():
+            if tool.is_active():
+                tool.apply(mx_int, my_int, brush_radius)
+
+        update_image()
+        if time.time() - brush_changed < 5:
             gui.circle([mx, my], color=0x303030, radius=brush_radius)
 
+        gui.set_image(image)
         gui.show()
-
 
 if __name__ == "__main__":
     main()
