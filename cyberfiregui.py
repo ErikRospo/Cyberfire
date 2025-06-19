@@ -112,7 +112,7 @@ class FireWindow(QMainWindow):
             accel = 1 / (now - self.brush_changed + 0.25)
         else:
             accel = 1
-        delta_with_accel = int(delta_y * accel / 320)
+        delta_with_accel = int(delta_y * accel / 32)
         print(f"{delta_y=} {delta_with_accel=} {accel=} {self.brush_radius=}")
         self.brush_radius += delta_with_accel
         self.brush_radius = max(1, min(self.brush_radius, 400))
