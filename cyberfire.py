@@ -240,6 +240,23 @@ class FixEraseTool(Tool):
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 0)
 
+class HighlightFixedTool(Tool):
+    def __init__(self):
+        super().__init__("Highlight Fixed")
+
+    def apply(self):
+        highlight_fixed_pixels()
+
+@ti.kernel
+def highlight_fixed_pixels():
+    for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT):
+        if fixedPixels[x, y] == 1:
+            # Cyan: R=0, G=255, B=255
+            image[x, FIRE_HEIGHT - 1 - y, 0] = 0
+            image[x, FIRE_HEIGHT - 1 - y, 1] = 255
+            image[x, FIRE_HEIGHT - 1 - y, 2] = 255
+
+
 def main():
     current_time = 0
     mx = 0.5
@@ -267,6 +284,7 @@ def main():
         "fire_erase": FireEraseTool(),
         "fix_brush": FixBrushTool(),
         "fix_erase": FixEraseTool(),
+        "highlight_fixed": HighlightFixedTool(),
     }
 
     while gui.running:
@@ -302,8 +320,12 @@ def main():
                     brush_changed = 0
                 if event.type == ti.GUI.RELEASE:
                     tools["fix_erase"].trigger_off()
-                
-                
+            if event.key == "v":
+                if event.type == ti.GUI.PRESS:
+                    if tools["highlight_fixed"].is_active():
+                        tools["highlight_fixed"].trigger_off()
+                    else:
+                        tools["highlight_fixed"].trigger_on()
             if event.key == ti.GUI.WHEEL:
                 now = time.time()
                 if now - brush_changed < 0.5:
@@ -333,11 +355,18 @@ def main():
         my_int = int((1 - my) * FIRE_HEIGHT)
 
         # Apply active tools
-        for tool in tools.values():
+        for name, tool in tools.items():
             if tool.is_active():
-                tool.apply(mx_int, my_int, brush_radius)
+                if name == "highlight_fixed":
+                    tool.apply()
+                else:
+                    tool.apply(mx_int, my_int, brush_radius)
 
         update_image()
+        # Highlight fixed pixels after updating the image if the tool is active
+        if tools["highlight_fixed"].is_active():
+            highlight_fixed_pixels()
+
         gui.set_image(image)
         if (time.time() - brush_changed) < 2:
             t = min(1.0, (time.time() - brush_changed) / 2.0)
