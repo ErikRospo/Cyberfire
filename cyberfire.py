@@ -6,7 +6,8 @@ import numpy as np
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (QApplication, QDockWidget, QLabel, QMainWindow,
-                               QPushButton, QSizePolicy, QVBoxLayout, QWidget)
+                               QPushButton, QSizePolicy, QVBoxLayout, QWidget,
+                               QRadioButton, QButtonGroup, QHBoxLayout)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
@@ -56,6 +57,7 @@ class FireWindow(QMainWindow):
         self.label.setMouseTracking(True)
         self.pressing_lmb = False
         self.pressing_rmb = False
+        self.mode = "fire"  # "fire" or "fix"
 
         # --- Sidepanel UI ---
         self.tool_buttons = {}
@@ -72,22 +74,28 @@ class FireWindow(QMainWindow):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
 
-        tool_names = [
-            ("Fire Brush", "fire_brush"),
-            ("Fire Erase", "fire_erase"),
-            ("Fix Brush", "fix_brush"),
-            ("Fix Erase", "fix_erase"),
-            ("Highlight Fixed", "highlight_fixed"),
-        ]
-        for label, key in tool_names:
-            btn = QPushButton(label)
-            btn.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
-            )
-            btn.setCheckable(True)
-            btn.clicked.connect(lambda checked, k=key: self.select_tool(k))
-            layout.addWidget(btn)
-            self.tool_buttons[key] = btn
+        # --- Mode Radio Buttons ---
+        mode_group = QButtonGroup(panel)
+        fire_radio = QRadioButton("Fire Mode")
+        fix_radio = QRadioButton("Fix Mode")
+        fire_radio.setChecked(self.mode == "fire")
+        fix_radio.setChecked(self.mode == "fix")
+        mode_group.addButton(fire_radio)
+        mode_group.addButton(fix_radio)
+        fire_radio.toggled.connect(lambda checked: self.set_mode("fire") if checked else None)
+        fix_radio.toggled.connect(lambda checked: self.set_mode("fix") if checked else None)
+        layout.addWidget(fire_radio)
+        layout.addWidget(fix_radio)
+        self.fire_radio = fire_radio
+        self.fix_radio = fix_radio
+
+        # --- Highlight Fixed Button ---
+        highlight_btn = QPushButton("Toggle Highlight Fixed")
+        highlight_btn.setCheckable(True)
+        highlight_btn.setChecked(self.tools["highlight_fixed"].is_active())
+        highlight_btn.clicked.connect(self.toggle_highlight_fixed)
+        layout.addWidget(highlight_btn)
+        self.highlight_btn = highlight_btn
 
         layout.addStretch(1)
         panel.setLayout(layout)
@@ -95,30 +103,59 @@ class FireWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
         self.update_tool_buttons()
 
-    def select_tool(self, tool_key):
-        # Deactivate all tools except the selected one (except highlight_fixed, which toggles)
-        if tool_key == "highlight_fixed":
-            tool = self.tools[tool_key]
-            if tool.is_active():
-                tool.trigger_off()
-            else:
-                tool.trigger_on()
+    def set_mode(self, mode):
+        if mode == self.mode:
+            return
+        self.mode = mode
+        if mode == "fire":
+            # Deactivate fix tools
+            self.tools["fix_brush"].trigger_off()
+            self.tools["fix_erase"].trigger_off()
+            # Activate fire brush/erase depending on mouse buttons
+            if self.pressing_lmb:
+                self.tools["fire_brush"].trigger_on()
+                self.tools["fire_erase"].trigger_off()
+            elif self.pressing_rmb:
+                self.tools["fire_erase"].trigger_on()
+                self.tools["fire_brush"].trigger_off()
+        elif mode == "fix":
+            # Deactivate fire tools
+            self.tools["fire_brush"].trigger_off()
+            self.tools["fire_erase"].trigger_off()
+            # Activate fix brush/erase depending on mouse buttons
+            if self.pressing_lmb:
+                self.tools["fix_brush"].trigger_on()
+                self.tools["fix_erase"].trigger_off()
+            elif self.pressing_rmb:
+                self.tools["fix_erase"].trigger_on()
+                self.tools["fix_brush"].trigger_off()
+        self.brush_changed = 0
+        self.update_tool_buttons()
+
+    def toggle_highlight_fixed(self):
+        tool = self.tools["highlight_fixed"]
+        if tool.is_active():
+            tool.trigger_off()
         else:
-            for k, tool in self.tools.items():
-                if k == tool_key:
-                    tool.trigger_on()
-                elif k != "highlight_fixed":
-                    tool.trigger_off()
+            tool.trigger_on()
         self.update_tool_buttons()
 
     def update_tool_buttons(self):
-        for key, btn in self.tool_buttons.items():
-            active = self.tools[key].is_active()
-            btn.setChecked(active)
-            if active:
-                btn.setStyleSheet("background-color: #aaf; font-weight: bold;")
-            else:
-                btn.setStyleSheet("")
+        # Update radio buttons
+        self.fire_radio.setChecked(self.mode == "fire")
+        self.fix_radio.setChecked(self.mode == "fix")
+        # Update highlight button
+        active = self.tools["highlight_fixed"].is_active()
+        self.highlight_btn.setChecked(active)
+        if active:
+            self.highlight_btn.setStyleSheet("background-color: #aaf; font-weight: bold;")
+        else:
+            self.highlight_btn.setStyleSheet("")
+        # No more per-tool buttons
+
+    def select_tool(self, tool_key):
+        # No longer used, but kept for compatibility if called elsewhere
+        pass
 
     def update_frame(self):
         self.current_time += 0.05
@@ -129,7 +166,11 @@ class FireWindow(QMainWindow):
             if tool.is_active():
                 tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
-        if self.tools["highlight_fixed"].is_active():
+        # Show highlight if highlight_fixed is active or if fix mode is active
+        if (
+            self.tools["highlight_fixed"].is_active()
+            or self.mode=="fix"
+        ):
             highlight_fixed_pixels()
         # Fade alpha from 80 to 0 over 2 seconds
         elapsed = time.time() - self.brush_changed
@@ -152,23 +193,37 @@ class FireWindow(QMainWindow):
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
-            self.tools["fire_brush"].trigger_on()
-            self.tools["fire_erase"].trigger_off()
+            if self.mode == "fire":
+                self.tools["fire_brush"].trigger_on()
+                self.tools["fire_erase"].trigger_off()
+            elif self.mode == "fix":
+                self.tools["fix_brush"].trigger_on()
+                self.tools["fix_erase"].trigger_off()
             self.brush_changed = 0
             self.pressing_lmb = True
         elif event.button() == Qt.MouseButton.RightButton:
-            self.tools["fire_erase"].trigger_on()
-            self.tools["fire_brush"].trigger_off()
+            if self.mode == "fire":
+                self.tools["fire_erase"].trigger_on()
+                self.tools["fire_brush"].trigger_off()
+            elif self.mode == "fix":
+                self.tools["fix_erase"].trigger_on()
+                self.tools["fix_brush"].trigger_off()
             self.brush_changed = 0
             self.pressing_rmb = True
         self.update_tool_buttons()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
-            self.tools["fire_brush"].trigger_off()
+            if self.mode == "fire":
+                self.tools["fire_brush"].trigger_off()
+            elif self.mode == "fix":
+                self.tools["fix_brush"].trigger_off()
             self.pressing_lmb = False
         elif event.button() == Qt.MouseButton.RightButton:
-            self.tools["fire_erase"].trigger_off()
+            if self.mode == "fire":
+                self.tools["fire_erase"].trigger_off()
+            elif self.mode == "fix":
+                self.tools["fix_erase"].trigger_off()
             self.pressing_rmb = False
         self.update_tool_buttons()
 
@@ -192,19 +247,12 @@ class FireWindow(QMainWindow):
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
-        if key == Qt.Key.Key_F:
-            self.tools["fix_brush"].trigger_on()
-            self.tools["fix_erase"].trigger_off()
-            self.brush_changed = 0
-        elif key == Qt.Key.Key_U:
-            self.tools["fix_erase"].trigger_on()
-            self.tools["fix_brush"].trigger_off()
-            self.brush_changed = 0
+        if key == Qt.Key.Key_B:
+            self.set_mode("fire")
+        elif key == Qt.Key.Key_F:
+            self.set_mode("fix")
         elif key == Qt.Key.Key_V:
-            if self.tools["highlight_fixed"].is_active():
-                self.tools["highlight_fixed"].trigger_off()
-            else:
-                self.tools["highlight_fixed"].trigger_on()
+            self.toggle_highlight_fixed()
         elif key == Qt.Key.Key_P:
             self.palette_idx = (self.palette_idx + 1) % len(self.palette_functions)
             self.palette_functions[self.palette_idx]()
@@ -221,15 +269,6 @@ class FireWindow(QMainWindow):
         elif key == Qt.Key.Key_S:
             self.brush_changed = time.time() + 3
         self.update_tool_buttons()
-
-    def keyReleaseEvent(self, event: QKeyEvent):
-        key = event.key()
-        if key == Qt.Key.Key_F:
-            self.tools["fix_brush"].trigger_off()
-        elif key == Qt.Key.Key_U:
-            self.tools["fix_erase"].trigger_off()
-        self.update_tool_buttons()
-
 
 def main():
     app = QApplication(sys.argv)
