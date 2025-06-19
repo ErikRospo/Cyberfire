@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QHBoxLayout, QLabel, QMainWindow, QPushButton,
-                               QRadioButton, QVBoxLayout, QWidget)
+                               QRadioButton, QSlider, QVBoxLayout, QWidget)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
@@ -78,11 +78,12 @@ class FireWindow(QMainWindow):
         self.my = 0.5
         self.pressing_lmb = False
         self.pressing_rmb = False
+        self.intensity_percent = 100  
         self.modes = {
             ModeType.FIRE: FireMode(),
             ModeType.FIX: FixMode(),
-            ModeType.FIRE_LINE: FireLineMode(),  # Add FireLineMode
-            ModeType.FIRE_RECT: FireRectMode(),  # Add FireRectMode
+            ModeType.FIRE_LINE: FireLineMode(),
+            ModeType.FIRE_RECT: FireRectMode(),
         }
         self.mode = ModeType.FIRE  # Default mode
 
@@ -92,8 +93,8 @@ class FireWindow(QMainWindow):
             ToolType.FIX_BRUSH: FixBrushTool(),
             ToolType.FIX_ERASE: FixEraseTool(),
             ToolType.HIGHLIGHT_FIXED: HighlightFixedTool(),
-            ToolType.FIRE_LINE: FireLineTool(),  # Add FireLineTool
-            ToolType.FIRE_RECT: FireRectTool(),  # Add FireRectTool
+            ToolType.FIRE_LINE: FireLineTool(), 
+            ToolType.FIRE_RECT: FireRectTool(), 
         }
 
         self.palettes = [
@@ -153,6 +154,20 @@ class FireWindow(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
+
+        # --- Intensity Slider ---
+        intensity_label = QLabel(f"Intensity: {self.intensity_percent}%", panel)
+        intensity_slider = QSlider(Qt.Orientation.Horizontal, panel)
+        intensity_slider.setMinimum(0)
+        intensity_slider.setMaximum(100)
+        intensity_slider.setValue(self.intensity_percent)
+        intensity_slider.setTickInterval(10)
+        intensity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        intensity_slider.valueChanged.connect(lambda val: self.set_intensity(val, intensity_label))
+        layout.addWidget(intensity_label)
+        layout.addWidget(intensity_slider)
+        self.intensity_slider = intensity_slider
+        self.intensity_label = intensity_label
 
         # --- Palette Dropdown ---
         palette_combo = QComboBox(panel)
@@ -224,6 +239,11 @@ class FireWindow(QMainWindow):
         layout.addStretch(1)
         panel.setLayout(layout)
         return panel
+
+    def set_intensity(self, val:int, label=None):
+        self.intensity_percent = val
+        if label is not None:
+            label.setText(f"Intensity: {val}%")
 
     def reset_all(self):
         firePixels.fill(0)
@@ -307,9 +327,14 @@ class FireWindow(QMainWindow):
         do_fire(self.current_time)
         mx_int = self.imx
         my_int = self.imy
+        intensity = float(self.intensity_percent/100)
+        
         for ttype, tool in self.tools.items():
             if tool.is_active():
-                tool.apply(mx_int, my_int, self.brush_radius)
+                try:
+                    tool.apply(mx_int, my_int, self.brush_radius, intensity)
+                except TypeError:
+                    tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
         # Show highlight if highlight_fixed is active or if fix mode is active
         if (
@@ -342,6 +367,7 @@ class FireWindow(QMainWindow):
         rmb_tool = self.modes[self.mode].rmb_tool_type
         mx_int = self.imx
         my_int = self.imy
+        intensity:float = float(self.intensity_percent/100)
         if self.mode == ModeType.FIRE_LINE:
             fire_line_tool = self.tools[ToolType.FIRE_LINE]
             assert type(fire_line_tool) == FireLineTool
@@ -352,7 +378,7 @@ class FireWindow(QMainWindow):
             elif event.button() == Qt.MouseButton.RightButton:
                 if fire_line_tool.first_point is not None:
                     fire_line_tool.trigger_on()
-                    fire_line_tool.apply(mx_int, my_int, self.brush_radius)
+                    fire_line_tool.apply(mx_int, my_int, self.brush_radius, intensity)
                     fire_line_tool.trigger_off()
                     fire_line_tool.clear_first_point()
                 self.pressing_rmb = True
@@ -368,7 +394,7 @@ class FireWindow(QMainWindow):
             elif event.button() == Qt.MouseButton.RightButton:
                 if fire_rect_tool.first_point is not None:
                     fire_rect_tool.trigger_on()
-                    fire_rect_tool.apply(mx_int, my_int, self.brush_radius)
+                    fire_rect_tool.apply(mx_int, my_int, self.brush_radius, intensity)
                     fire_rect_tool.trigger_off()
                     fire_rect_tool.clear_first_point()
                 self.pressing_rmb = True
@@ -379,11 +405,23 @@ class FireWindow(QMainWindow):
             self.tools[rmb_tool].trigger_off()
             self.brush_changed = 0
             self.pressing_lmb = True
+            #FIXME: This certainly is one way to do this, but it seems very hacky
+            # Pass intensity to tool if it supports it
+            if hasattr(self.tools[lmb_tool], 'apply'):
+                try:
+                    self.tools[lmb_tool].apply(mx_int, my_int, self.brush_radius, intensity)
+                except TypeError:
+                    self.tools[lmb_tool].apply(mx_int, my_int, self.brush_radius)
         elif event.button() == Qt.MouseButton.RightButton:
             self.tools[rmb_tool].trigger_on()
             self.tools[lmb_tool].trigger_off()
             self.brush_changed = 0
             self.pressing_rmb = True
+            if hasattr(self.tools[rmb_tool], 'apply'):
+                try:
+                    self.tools[rmb_tool].apply(mx_int, my_int, self.brush_radius, intensity)
+                except TypeError:
+                    self.tools[rmb_tool].apply(mx_int, my_int, self.brush_radius)
         self.update_tool_buttons()
 
     def mouseReleaseEvent(self, event: QMouseEvent):

@@ -134,14 +134,14 @@ def do_fire(time: float):
 
 
 @ti.kernel
-def change_heat_at_position(mx: int, my: int, radius: int, multiplier: int):
+def change_heat_at_position(mx: int, my: int, radius: int, multiplier: float):
     for dx, dy in ti.ndrange((-radius, radius), (-radius, radius)):
         x = mx + dx
         y = my + dy
         if 0 <= x < FIRE_WIDTH and 0 <= y < FIRE_HEIGHT:
             dist = (dx * dx + dy * dy) ** 0.5
             if dist <= radius:
-                delta = int(MAX_INTENSITY * (1 - dist / radius)) * multiplier
+                delta = int(MAX_INTENSITY * (1 - dist / radius) * multiplier*multiplier)
                 firePixels[x, y] = ti.min(MAX_INTENSITY, firePixels[x, y] + delta)
 
 
