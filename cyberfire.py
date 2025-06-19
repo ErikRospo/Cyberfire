@@ -338,10 +338,14 @@ def main():
                 tool.apply(mx_int, my_int, brush_radius)
 
         update_image()
-        if time.time() - brush_changed < 5:
-            gui.circle([mx, my], color=0x303030, radius=brush_radius)
-
         gui.set_image(image)
+        if (time.time() - brush_changed) < 2:
+            t = min(1.0, (time.time() - brush_changed) / 2.0)
+            base_rgb = [0x50, 0x50, 0x50]
+            r,g,b = [int(v * (1 - t)) for v in base_rgb]
+            color = (r << 16) | (g << 8) | b
+            gui.circle([mx, my], color=color, radius=brush_radius)
+            
         gui.show()
 
 if __name__ == "__main__":
