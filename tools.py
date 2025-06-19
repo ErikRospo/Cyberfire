@@ -189,9 +189,9 @@ class FixRectTool(Tool):
 
             set_fixed_pixels_rect(
                 xmin,
+                xmax,
                 ymin,
-                xmax - xmin + 1,
-                ymax - ymin + 1,
+                ymax,
                 0 if self.erase_mode else 1,
             )
             self.clear_first_point()
