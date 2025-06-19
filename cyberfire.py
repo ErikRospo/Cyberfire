@@ -19,6 +19,36 @@ from tools import (FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool,
                    HighlightFixedTool, Tool)
 
 
+class Mode:
+    def __init__(self, lmb_tool, rmb_tool):
+        self.lmb_tool = lmb_tool
+        self.rmb_tool = rmb_tool
+
+    def activate(self, tools):
+        # Deactivate all tools except highlight
+        for name, tool in tools.items():
+            if name not in ("highlight_fixed",):
+                tool.trigger_off()
+        return tools
+
+    def deactivate(self, tools):
+        # Deactivate all tools except highlight
+        for name, tool in tools.items():
+            if name not in ("highlight_fixed",):
+                tool.trigger_off()
+        return tools
+
+
+class FireMode(Mode):
+    def __init__(self):
+        super().__init__("fire_brush", "fire_erase")
+
+
+class FixMode(Mode):
+    def __init__(self):
+        super().__init__("fix_brush", "fix_erase")
+
+
 class FireWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -29,6 +59,10 @@ class FireWindow(QMainWindow):
         self.my = 0.5
         self.pressing_lmb = False
         self.pressing_rmb = False
+        self.modes = {
+            "fire": FireMode(),
+            "fix": FixMode(),
+        }
         self.mode = "fire"  # "fire" or "fix"
 
         self.tools: Dict[str, Tool] = {
@@ -111,29 +145,20 @@ class FireWindow(QMainWindow):
     def set_mode(self, mode):
         if mode == self.mode:
             return
+        # Deactivate previous mode
+        self.modes[self.mode].deactivate(self.tools)
         self.mode = mode
-        if mode == "fire":
-            # Deactivate fix tools
-            self.tools["fix_brush"].trigger_off()
-            self.tools["fix_erase"].trigger_off()
-            # Activate fire brush/erase depending on mouse buttons
-            if self.pressing_lmb:
-                self.tools["fire_brush"].trigger_on()
-                self.tools["fire_erase"].trigger_off()
-            elif self.pressing_rmb:
-                self.tools["fire_erase"].trigger_on()
-                self.tools["fire_brush"].trigger_off()
-        elif mode == "fix":
-            # Deactivate fire tools
-            self.tools["fire_brush"].trigger_off()
-            self.tools["fire_erase"].trigger_off()
-            # Activate fix brush/erase depending on mouse buttons
-            if self.pressing_lmb:
-                self.tools["fix_brush"].trigger_on()
-                self.tools["fix_erase"].trigger_off()
-            elif self.pressing_rmb:
-                self.tools["fix_erase"].trigger_on()
-                self.tools["fix_brush"].trigger_off()
+        # Activate new mode
+        self.modes[self.mode].activate(self.tools)
+        # Activate tool depending on mouse buttons
+        lmb_tool = self.modes[self.mode].lmb_tool
+        rmb_tool = self.modes[self.mode].rmb_tool
+        if self.pressing_lmb:
+            self.tools[lmb_tool].trigger_on()
+            self.tools[rmb_tool].trigger_off()
+        elif self.pressing_rmb:
+            self.tools[rmb_tool].trigger_on()
+            self.tools[lmb_tool].trigger_off()
         self.brush_changed = 0
         self.update_tool_buttons()
 
@@ -191,38 +216,28 @@ class FireWindow(QMainWindow):
         self.label.setPixmap(QPixmap.fromImage(qimg))
 
     def mousePressEvent(self, event: QMouseEvent):
+        lmb_tool = self.modes[self.mode].lmb_tool
+        rmb_tool = self.modes[self.mode].rmb_tool
         if event.button() == Qt.MouseButton.LeftButton:
-            if self.mode == "fire":
-                self.tools["fire_brush"].trigger_on()
-                self.tools["fire_erase"].trigger_off()
-            elif self.mode == "fix":
-                self.tools["fix_brush"].trigger_on()
-                self.tools["fix_erase"].trigger_off()
+            self.tools[lmb_tool].trigger_on()
+            self.tools[rmb_tool].trigger_off()
             self.brush_changed = 0
             self.pressing_lmb = True
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.mode == "fire":
-                self.tools["fire_erase"].trigger_on()
-                self.tools["fire_brush"].trigger_off()
-            elif self.mode == "fix":
-                self.tools["fix_erase"].trigger_on()
-                self.tools["fix_brush"].trigger_off()
+            self.tools[rmb_tool].trigger_on()
+            self.tools[lmb_tool].trigger_off()
             self.brush_changed = 0
             self.pressing_rmb = True
         self.update_tool_buttons()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        lmb_tool = self.modes[self.mode].lmb_tool
+        rmb_tool = self.modes[self.mode].rmb_tool
         if event.button() == Qt.MouseButton.LeftButton:
-            if self.mode == "fire":
-                self.tools["fire_brush"].trigger_off()
-            elif self.mode == "fix":
-                self.tools["fix_brush"].trigger_off()
+            self.tools[lmb_tool].trigger_off()
             self.pressing_lmb = False
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.mode == "fire":
-                self.tools["fire_erase"].trigger_off()
-            elif self.mode == "fix":
-                self.tools["fix_erase"].trigger_off()
+            self.tools[rmb_tool].trigger_off()
             self.pressing_rmb = False
         self.update_tool_buttons()
 
