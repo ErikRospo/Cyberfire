@@ -11,8 +11,8 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QRadioButton, QSlider, QVBoxLayout, QWidget)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
-                  firePixels, highlight_fixed_pixels, image, initialize_fire,
-                  get_palette_list, render_tool_radius, update_image)
+                  firePixels, get_palette_list, highlight_fixed_pixels, image,
+                  initialize_fire, render_tool_radius, update_image)
 from modes import FireLineMode, FireMode, FireRectMode, FixMode, ModeType
 from tools import (FireBrushTool, FireEraseTool, FireLineTool, FireRectTool,
                    FixBrushTool, FixEraseTool, HighlightFixedTool, Tool,
