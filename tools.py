@@ -11,8 +11,8 @@ class ToolType(Enum):
     FIX_BRUSH = auto()
     FIX_ERASE = auto()
     HIGHLIGHT_FIXED = auto()
-    FIRE_LINE = auto()  # New tool type
-    FIRE_RECT = auto()  # Rectangle fire tool
+    FIRE_LINE = auto()
+    FIRE_RECT = auto()
 
 
 class Tool:
@@ -100,6 +100,7 @@ class FireLineTool(Tool):
             x1, y1 = mx_int, my_int
 
             # Bresenham's line algorithm
+            # https://en.wikipedia.org/wiki/Bresenham's_line_algorithm
             dx = abs(x1 - x0)
             dy = abs(y1 - y0)
             x, y = x0, y0
