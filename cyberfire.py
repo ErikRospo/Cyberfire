@@ -130,6 +130,7 @@ class FireWindow(QMainWindow):
 
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
+        self.label.mouseMoveEvent=self.mouseMoveEvent
 
     @property
     def imx(self):
@@ -414,13 +415,14 @@ class FireWindow(QMainWindow):
     def mouseMoveEvent(self, event: QMouseEvent):
         self.update_mouse_position(event)
 
-    def update_mouse_position(self, event: QMouseEvent):
+    def update_mouse_position(self, event: QMouseEvent|QWheelEvent):
         x = event.position().x()
         y = event.position().y()
         self.imx = x
         self.imy = y
 
     def wheelEvent(self, event: QWheelEvent):
+        self.update_mouse_position(event)
         now = time.time()
         delta_y = event.angleDelta().y()
         if now - self.brush_changed < 0.5:
