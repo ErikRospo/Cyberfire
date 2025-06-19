@@ -69,11 +69,10 @@ class FireWindow(QMainWindow):
 
         self.resize(FIRE_WIDTH, FIRE_HEIGHT)
         initialize_fire()
-        # Refactored palette as list of (name, function) tuples
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
-        self.timer.start(16)  # ~60 FPS
+        self.timer.start(16)
 
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
