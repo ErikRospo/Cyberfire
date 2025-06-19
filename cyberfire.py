@@ -1,14 +1,31 @@
 import time
 import taichi as ti
 from core import (
-    firePixels, image,
-    do_fire, update_image, initialize_fire, clear_fixed_pixels,
+    firePixels,
+    image,
+    do_fire,
+    update_image,
+    initialize_fire,
+    clear_fixed_pixels,
     highlight_fixed_pixels,
-    initialize_palette_fire, initialize_palette_cyber, initialize_palette_gray,
-    initialize_palette_cold_fire, initialize_palette_sunset, initialize_palette_toxic, initialize_palette_electric,
-    FIRE_WIDTH, FIRE_HEIGHT
+    initialize_palette_fire,
+    initialize_palette_cyber,
+    initialize_palette_gray,
+    initialize_palette_cold_fire,
+    initialize_palette_sunset,
+    initialize_palette_toxic,
+    initialize_palette_electric,
+    FIRE_WIDTH,
+    FIRE_HEIGHT,
 )
-from tools import FireBrushTool, FireEraseTool, FixBrushTool, FixEraseTool, HighlightFixedTool
+from tools import (
+    FireBrushTool,
+    FireEraseTool,
+    FixBrushTool,
+    FixEraseTool,
+    HighlightFixedTool,
+)
+
 
 def main():
     current_time = 0
@@ -115,6 +132,7 @@ def main():
             color = (r << 16) | (g << 8) | b
             gui.circle([mx, my], color=color, radius=brush_radius)
         gui.show()
+
 
 if __name__ == "__main__":
     main()

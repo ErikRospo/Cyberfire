@@ -4,6 +4,7 @@ from core import (
     highlight_fixed_pixels,
 )
 
+
 class Tool:
     def __init__(self, name):
         self.name = name
@@ -21,12 +22,14 @@ class Tool:
     def apply(self, *args, **kwargs):
         pass
 
+
 class FireBrushTool(Tool):
     def __init__(self):
         super().__init__("Fire Paint")
 
     def apply(self, mx_int, my_int, brush_radius):
         change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=1)
+
 
 class FireEraseTool(Tool):
     def __init__(self):
@@ -35,12 +38,14 @@ class FireEraseTool(Tool):
     def apply(self, mx_int, my_int, brush_radius):
         change_heat_at_position(mx_int, my_int, radius=brush_radius, multiplier=-1)
 
+
 class FixBrushTool(Tool):
     def __init__(self):
         super().__init__("Fix Brush")
 
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 1)
+
 
 class FixEraseTool(Tool):
     def __init__(self):
@@ -49,9 +54,10 @@ class FixEraseTool(Tool):
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 0)
 
+
 class HighlightFixedTool(Tool):
     def __init__(self):
         super().__init__("Highlight Fixed")
 
-    def apply(self,_mx_int,_my_int,_brush_radius):
+    def apply(self, _mx_int, _my_int, _brush_radius):
         highlight_fixed_pixels()

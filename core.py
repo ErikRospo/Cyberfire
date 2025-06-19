@@ -22,40 +22,51 @@ colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_INTENSITY + 1))
 
 # Palette management
 
+
 def set_palette(palette_func):
     palette = palette_func()
     for i in range(MAX_INTENSITY + 1):
         colors[i] = palette[i]
 
+
 def initialize_palette_fire():
     set_palette(palette_fire)
+
 
 def initialize_palette_cyber():
     set_palette(palette_cyber)
 
+
 def initialize_palette_gray():
     set_palette(palette_gray)
+
 
 def initialize_palette_cold_fire():
     set_palette(palette_cold_fire)
 
+
 def initialize_palette_sunset():
     set_palette(palette_sunset)
+
 
 def initialize_palette_toxic():
     set_palette(palette_toxic)
 
+
 def initialize_palette_electric():
     set_palette(palette_electric)
+
 
 # Perlin noise and fire spread
 @ti.func
 def lerp(a, b, t):
     return a * (1 - t) + b * t
 
+
 @ti.func
 def fade(t):
     return t * t * t * (t * (t * 6 - 15) + 10)
+
 
 @ti.func
 def grad(hash, x, y, z):
@@ -64,9 +75,11 @@ def grad(hash, x, y, z):
     v = y if h < 4 else (x if (h == 12 or h == 14) else z)
     return (u if (h & 1) == 0 else -u) + (v if (h & 2) == 0 else -v)
 
+
 @ti.func
 def permute(x):
     return ((34 * x + 1) * x) % 289
+
 
 @ti.func
 def perlin_noise(x, y, z):
@@ -101,6 +114,7 @@ def perlin_noise(x, y, z):
     y2 = lerp(x3, x4, v)
     return (lerp(y1, y2, w) + 1) * 0.5
 
+
 @ti.func
 def spread_fire(x: int, y: int, time: float):
     if y < FIRE_HEIGHT - 1:
@@ -116,10 +130,12 @@ def spread_fire(x: int, y: int, time: float):
         if fixedPixels[dst_x, y] == 0:
             firePixels[dst_x, y] = new_intensity
 
+
 @ti.kernel
 def do_fire(time: float):
     for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT - 1):
         spread_fire(x, y, time)
+
 
 @ti.kernel
 def change_heat_at_position(mx: int, my: int, radius: int, multiplier: int):
@@ -132,6 +148,7 @@ def change_heat_at_position(mx: int, my: int, radius: int, multiplier: int):
                 delta = int(MAX_INTENSITY * (1 - dist / radius)) * multiplier
                 firePixels[x, y] = ti.min(MAX_INTENSITY, firePixels[x, y] + delta)
 
+
 @ti.kernel
 def set_fixed_pixels(mx: int, my: int, radius: int, state: int):
     for dx, dy in ti.ndrange((-radius, radius), (-radius, radius)):
@@ -142,6 +159,7 @@ def set_fixed_pixels(mx: int, my: int, radius: int, state: int):
             if dist <= radius:
                 fixedPixels[x, y] = state
 
+
 @ti.kernel
 def update_image():
     for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT):
@@ -149,15 +167,18 @@ def update_image():
         for c in ti.static(range(3)):
             image[x, FIRE_HEIGHT - 1 - y, c] = colors[intensity][c]
 
+
 @ti.kernel
 def initialize_fire():
     for x in range(FIRE_WIDTH):
         firePixels[x, FIRE_HEIGHT - 1] = MAX_INTENSITY
 
+
 @ti.kernel
 def clear_fixed_pixels():
     for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT):
         fixedPixels[x, y] = 0
+
 
 @ti.kernel
 def highlight_fixed_pixels():
@@ -166,10 +187,14 @@ def highlight_fixed_pixels():
             image[x, FIRE_HEIGHT - 1 - y, 0] = 0
             image[x, FIRE_HEIGHT - 1 - y, 1] = 255
             image[x, FIRE_HEIGHT - 1 - y, 2] = 255
+
+
 @ti.kernel
-def render_tool_radius(mx: int, my: int, brush_radius: int,alpha:int):
-    rad_squared=brush_radius*brush_radius
-    for dx, dy in ti.ndrange((-brush_radius, brush_radius + 1), (-brush_radius, brush_radius + 1)):
+def render_tool_radius(mx: int, my: int, brush_radius: int, alpha: int):
+    rad_squared = brush_radius * brush_radius
+    for dx, dy in ti.ndrange(
+        (-brush_radius, brush_radius + 1), (-brush_radius, brush_radius + 1)
+    ):
         x = mx + dx
         y = my + dy
         if 0 <= x < FIRE_WIDTH and 0 <= y < FIRE_HEIGHT:
