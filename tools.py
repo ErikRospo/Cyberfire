@@ -153,7 +153,5 @@ class FireRectTool(Tool):
             xmin, xmax = sorted([x0, x1])
             ymin, ymax = sorted([y0, y1])
             # Draw the rectangle with intensity percent
-            for x in range(xmin, xmax + 1):
-                for y in range(ymin, ymax + 1):
-                    change_heat_at_position(x, y, radius=1, multiplier=intensity)
+            fire_rectangle(xmin,xmax,ymin,ymax,intensity)
             self.clear_first_point()

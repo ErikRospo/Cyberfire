@@ -208,4 +208,4 @@ def render_tool_radius(mx: int, my: int, brush_radius: int, alpha: int):
 @ti.kernel
 def fire_rectangle(xmin: int, xmax: int, ymin: int, ymax: int):
     for x, y in ti.ndrange((xmin, xmax + 1), (ymin, ymax + 1)):
-        firePixels[x, y] = MAX_INTENSITY
+        firePixels[x, y] = MAX_INTENSITY*intensity
