@@ -78,7 +78,7 @@ class FireWindow(QMainWindow):
         self.my = 0.5
         self.pressing_lmb = False
         self.pressing_rmb = False
-        self.intensity_percent = 100  
+        self.intensity_percent = 100
         self.modes = {
             ModeType.FIRE: FireMode(),
             ModeType.FIX: FixMode(),
@@ -93,8 +93,8 @@ class FireWindow(QMainWindow):
             ToolType.FIX_BRUSH: FixBrushTool(),
             ToolType.FIX_ERASE: FixEraseTool(),
             ToolType.HIGHLIGHT_FIXED: HighlightFixedTool(),
-            ToolType.FIRE_LINE: FireLineTool(), 
-            ToolType.FIRE_RECT: FireRectTool(), 
+            ToolType.FIRE_LINE: FireLineTool(),
+            ToolType.FIRE_RECT: FireRectTool(),
         }
 
         self.palettes = [
@@ -163,7 +163,9 @@ class FireWindow(QMainWindow):
         intensity_slider.setValue(self.intensity_percent)
         intensity_slider.setTickInterval(10)
         intensity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        intensity_slider.valueChanged.connect(lambda val: self.set_intensity(val, intensity_label))
+        intensity_slider.valueChanged.connect(
+            lambda val: self.set_intensity(val, intensity_label)
+        )
         layout.addWidget(intensity_label)
         layout.addWidget(intensity_slider)
         self.intensity_slider = intensity_slider
@@ -240,7 +242,7 @@ class FireWindow(QMainWindow):
         panel.setLayout(layout)
         return panel
 
-    def set_intensity(self, val:int, label=None):
+    def set_intensity(self, val: int, label=None):
         self.intensity_percent = val
         if label is not None:
             label.setText(f"Intensity: {val}%")
@@ -268,11 +270,11 @@ class FireWindow(QMainWindow):
         # Clear FireLineTool or FireRectTool state if leaving those modes
         if self.mode == ModeType.FIRE_LINE:
             s = self.tools[ToolType.FIRE_LINE]
-            assert type(s) == FireLineTool #Keep Pylance happy
+            assert type(s) == FireLineTool  # Keep Pylance happy
             s.clear_first_point()
         if self.mode == ModeType.FIRE_RECT:
             s = self.tools[ToolType.FIRE_RECT]
-            assert type(s) == FireRectTool # Keep Pylance happy
+            assert type(s) == FireRectTool  # Keep Pylance happy
             s.clear_first_point()
         self.mode = mode
         # Activate new mode
@@ -313,9 +315,7 @@ class FireWindow(QMainWindow):
         active = self.tools[ToolType.HIGHLIGHT_FIXED].is_active()
         self.highlight_btn.setChecked(active)
         if active:
-            self.highlight_btn.setStyleSheet(
-                "font-weight: bold;"
-            )
+            self.highlight_btn.setStyleSheet("font-weight: bold;")
         else:
             self.highlight_btn.setStyleSheet("")
         # Update palette combo
@@ -327,8 +327,8 @@ class FireWindow(QMainWindow):
         do_fire(self.current_time)
         mx_int = self.imx
         my_int = self.imy
-        intensity = float(self.intensity_percent/100)
-        
+        intensity = float(self.intensity_percent / 100)
+
         for ttype, tool in self.tools.items():
             if tool.is_active():
                 try:
@@ -367,7 +367,7 @@ class FireWindow(QMainWindow):
         rmb_tool = self.modes[self.mode].rmb_tool_type
         mx_int = self.imx
         my_int = self.imy
-        intensity:float = float(self.intensity_percent/100)
+        intensity: float = float(self.intensity_percent / 100)
         if self.mode == ModeType.FIRE_LINE:
             fire_line_tool = self.tools[ToolType.FIRE_LINE]
             assert type(fire_line_tool) == FireLineTool
@@ -405,11 +405,13 @@ class FireWindow(QMainWindow):
             self.tools[rmb_tool].trigger_off()
             self.brush_changed = 0
             self.pressing_lmb = True
-            #FIXME: This certainly is one way to do this, but it seems very hacky
+            # FIXME: This certainly is one way to do this, but it seems very hacky
             # Pass intensity to tool if it supports it
-            if hasattr(self.tools[lmb_tool], 'apply'):
+            if hasattr(self.tools[lmb_tool], "apply"):
                 try:
-                    self.tools[lmb_tool].apply(mx_int, my_int, self.brush_radius, intensity)
+                    self.tools[lmb_tool].apply(
+                        mx_int, my_int, self.brush_radius, intensity
+                    )
                 except TypeError:
                     self.tools[lmb_tool].apply(mx_int, my_int, self.brush_radius)
         elif event.button() == Qt.MouseButton.RightButton:
@@ -417,9 +419,11 @@ class FireWindow(QMainWindow):
             self.tools[lmb_tool].trigger_off()
             self.brush_changed = 0
             self.pressing_rmb = True
-            if hasattr(self.tools[rmb_tool], 'apply'):
+            if hasattr(self.tools[rmb_tool], "apply"):
                 try:
-                    self.tools[rmb_tool].apply(mx_int, my_int, self.brush_radius, intensity)
+                    self.tools[rmb_tool].apply(
+                        mx_int, my_int, self.brush_radius, intensity
+                    )
                 except TypeError:
                     self.tools[rmb_tool].apply(mx_int, my_int, self.brush_radius)
         self.update_tool_buttons()
