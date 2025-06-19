@@ -12,10 +12,11 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, get_palette_list, highlight_fixed_pixels, image,
                   initialize_fire, render_tool_radius, update_image)
-from modes import FireLineMode, FireMode, FireRectMode, FixMode, FixRectMode, Mode, ModeType
+from modes import (FireLineMode, FireMode, FireRectMode, FixMode, FixRectMode,
+                   Mode, ModeType)
 from tools import (FireBrushTool, FireEraseTool, FireLineTool, FireRectTool,
-                   FixBrushTool, FixEraseTool, HighlightFixedTool, Tool,
-                   ToolType, FixRectTool) 
+                   FixBrushTool, FixEraseTool, FixRectTool, HighlightFixedTool,
+                   Tool, ToolType)
 
 
 class FireWindow(QMainWindow):
@@ -29,12 +30,12 @@ class FireWindow(QMainWindow):
         self.pressing_lmb = False
         self.pressing_rmb = False
         self.intensity_percent = 100
-        self.modes:Dict[ModeType,Mode] = {
+        self.modes: Dict[ModeType, Mode] = {
             ModeType.FIRE: FireMode(),
             ModeType.FIX: FixMode(),
             ModeType.FIRE_LINE: FireLineMode(),
             ModeType.FIRE_RECT: FireRectMode(),
-            ModeType.FIX_RECT: FixRectMode(), 
+            ModeType.FIX_RECT: FixRectMode(),
         }
         self.mode = ModeType.FIRE  # Default mode
 
@@ -46,7 +47,7 @@ class FireWindow(QMainWindow):
             ToolType.HIGHLIGHT_FIXED: HighlightFixedTool(),
             ToolType.FIRE_LINE: FireLineTool(),
             ToolType.FIRE_RECT: FireRectTool(),
-            ToolType.FIX_RECT: FixRectTool(), 
+            ToolType.FIX_RECT: FixRectTool(),
         }
 
         # Use palette list from core.py
@@ -165,7 +166,7 @@ class FireWindow(QMainWindow):
         self.fix_radio = fix_radio
         self.fireline_radio = fireline_radio
         self.firerect_radio = firerect_radio
-        self.fixrect_radio = fixrect_radio 
+        self.fixrect_radio = fixrect_radio
 
         # --- Highlight Fixed Button ---
         highlight_btn = QPushButton("Toggle Highlight Fixed")

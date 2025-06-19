@@ -5,6 +5,7 @@ from constants import (ADD_MULT, DECAY_MULT, FIRE_HEIGHT, FIRE_WIDTH,
 from palettes import (palette_cold_fire, palette_cyber, palette_electric,
                       palette_fire, palette_gray, palette_sunset,
                       palette_toxic)
+
 ti.init(arch=ti.gpu)
 
 # Fire simulation field: (width, height)
@@ -127,7 +128,11 @@ def change_heat_at_position(mx: int, my: int, radius: int, multiplier: float):
             dist = (dx * dx + dy * dy) ** 0.5
             if dist <= radius:
                 delta = int(
-                    MAX_INTENSITY * (1 - dist / radius) * multiplier * multiplier * (ti.abs(multiplier)/multiplier)
+                    MAX_INTENSITY
+                    * (1 - dist / radius)
+                    * multiplier
+                    * multiplier
+                    * (ti.abs(multiplier) / multiplier)
                 )
                 firePixels[x, y] = ti.min(MAX_INTENSITY, firePixels[x, y] + delta)
 
@@ -142,11 +147,14 @@ def set_fixed_pixels(mx: int, my: int, radius: int, state: int):
             if dist <= radius:
                 fixedPixels[x, y] = state
 
+
 @ti.kernel
 def set_fixed_pixels_rect(xmin: int, xmax: int, ymin: int, ymax: int, state: int):
     for x, y in ti.ndrange((xmin, xmax + 1), (ymin, ymax + 1)):
         if 0 <= x < FIRE_WIDTH and 0 <= y < FIRE_HEIGHT:
             fixedPixels[x, y] = state
+
+
 @ti.kernel
 def update_image():
     for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT):

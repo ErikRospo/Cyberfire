@@ -2,7 +2,8 @@ from enum import Enum, auto
 from typing import Optional
 
 from core import (change_heat_at_position, fire_rectangle,
-                  highlight_fixed_pixels, set_fixed_pixels, set_fixed_pixels_rect)
+                  highlight_fixed_pixels, set_fixed_pixels,
+                  set_fixed_pixels_rect)
 
 
 class ToolType(Enum):
@@ -175,7 +176,9 @@ class FixRectTool(Tool):
         self.first_point = None
         self.erase_mode = False
 
-    def apply(self, mx_int: int, my_int: int, _brush_radius: int, _intensity: float = 1):
+    def apply(
+        self, mx_int: int, my_int: int, _brush_radius: int, _intensity: float = 1
+    ):
         # Only draw if first_point is set and this is the second click
         if self.first_point is not None:
             x0, y0 = self.first_point
@@ -183,6 +186,12 @@ class FixRectTool(Tool):
             xmin, xmax = sorted([x0, x1])
             ymin, ymax = sorted([y0, y1])
             # Set or clear fixed pixels in the rectangle
-    
-            set_fixed_pixels_rect(xmin, ymin, xmax - xmin + 1, ymax - ymin + 1, 0 if self.erase_mode else 1)
+
+            set_fixed_pixels_rect(
+                xmin,
+                ymin,
+                xmax - xmin + 1,
+                ymax - ymin + 1,
+                0 if self.erase_mode else 1,
+            )
             self.clear_first_point()
