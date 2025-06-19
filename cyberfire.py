@@ -5,9 +5,9 @@ from typing import Dict
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
-from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QPushButton,
-                                QVBoxLayout, QWidget, QRadioButton,
-                               QButtonGroup, QHBoxLayout)
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QLabel,
+                               QMainWindow, QPushButton, QRadioButton,
+                               QVBoxLayout, QWidget)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_fixed_pixels, do_fire,
                   firePixels, highlight_fixed_pixels, image, initialize_fire,
@@ -85,8 +85,12 @@ class FireWindow(QMainWindow):
         fix_radio.setChecked(self.mode == "fix")
         mode_group.addButton(fire_radio)
         mode_group.addButton(fix_radio)
-        fire_radio.toggled.connect(lambda checked: self.set_mode("fire") if checked else None)
-        fix_radio.toggled.connect(lambda checked: self.set_mode("fix") if checked else None)
+        fire_radio.toggled.connect(
+            lambda checked: self.set_mode("fire") if checked else None
+        )
+        fix_radio.toggled.connect(
+            lambda checked: self.set_mode("fix") if checked else None
+        )
         layout.addWidget(fire_radio)
         layout.addWidget(fix_radio)
         self.fire_radio = fire_radio
@@ -149,10 +153,11 @@ class FireWindow(QMainWindow):
         active = self.tools["highlight_fixed"].is_active()
         self.highlight_btn.setChecked(active)
         if active:
-            self.highlight_btn.setStyleSheet("background-color: #aaf; font-weight: bold;")
+            self.highlight_btn.setStyleSheet(
+                "background-color: #aaf; font-weight: bold;"
+            )
         else:
             self.highlight_btn.setStyleSheet("")
-
 
     def update_frame(self):
         self.current_time += 0.05
@@ -164,10 +169,7 @@ class FireWindow(QMainWindow):
                 tool.apply(mx_int, my_int, self.brush_radius)
         update_image()
         # Show highlight if highlight_fixed is active or if fix mode is active
-        if (
-            self.tools["highlight_fixed"].is_active()
-            or self.mode=="fix"
-        ):
+        if self.tools["highlight_fixed"].is_active() or self.mode == "fix":
             highlight_fixed_pixels()
         # Fade alpha from 80 to 0 over 2 seconds
         elapsed = time.time() - self.brush_changed
@@ -266,6 +268,7 @@ class FireWindow(QMainWindow):
         elif key == Qt.Key.Key_S:
             self.brush_changed = time.time() + 3
         self.update_tool_buttons()
+
 
 def main():
     app = QApplication(sys.argv)
