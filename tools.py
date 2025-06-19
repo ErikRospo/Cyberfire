@@ -20,6 +20,7 @@ class ToolType(Enum):
 class Tool:
     registry = {}
     tool_type: Optional[ToolType]
+    param_names: tuple = ()
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -44,6 +45,7 @@ class Tool:
 
 class FireBrushTool(Tool):
     tool_type = ToolType.FIRE_BRUSH
+    param_names = ("mx_int", "my_int", "brush_radius", "intensity")
 
     def apply(self, mx_int, my_int, brush_radius, intensity: float = 1):
         change_heat_at_position(
@@ -53,6 +55,7 @@ class FireBrushTool(Tool):
 
 class FireEraseTool(Tool):
     tool_type = ToolType.FIRE_ERASE
+    param_names = ("mx_int", "my_int", "brush_radius", "intensity")
 
     def apply(self, mx_int, my_int, brush_radius, intensity: float = 1):
 
@@ -63,6 +66,7 @@ class FireEraseTool(Tool):
 
 class FixBrushTool(Tool):
     tool_type = ToolType.FIX_BRUSH
+    param_names = ("mx_int", "my_int", "brush_radius")
 
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 1)
@@ -70,6 +74,7 @@ class FixBrushTool(Tool):
 
 class FixEraseTool(Tool):
     tool_type = ToolType.FIX_ERASE
+    param_names = ("mx_int", "my_int", "brush_radius")
 
     def apply(self, mx_int, my_int, brush_radius):
         set_fixed_pixels(mx_int, my_int, brush_radius, 0)
@@ -78,12 +83,12 @@ class FixEraseTool(Tool):
 class HighlightFixedTool(Tool):
     tool_type = ToolType.HIGHLIGHT_FIXED
 
-    def apply(self, _mx_int, _my_int, _brush_radius):
+    def apply(self):
         highlight_fixed_pixels()
-
 
 class FireLineTool(Tool):
     tool_type = ToolType.FIRE_LINE
+    param_names = ("mx_int", "my_int", "brush_radius", "intensity")
 
     def __init__(self):
         super().__init__()
@@ -137,6 +142,7 @@ class FireLineTool(Tool):
 
 class FireRectTool(Tool):
     tool_type = ToolType.FIRE_RECT
+    param_names = ("mx_int", "my_int", "intensity")
 
     def __init__(self):
         super().__init__()
@@ -148,7 +154,7 @@ class FireRectTool(Tool):
     def clear_first_point(self):
         self.first_point = None
 
-    def apply(self, mx_int: int, my_int: int, _brush_radius: int, intensity: float = 1):
+    def apply(self, mx_int: int, my_int: int, intensity: float = 1):
         # Only draw if first_point is set and this is the second click
         if self.first_point is not None:
             x0, y0 = self.first_point
@@ -162,6 +168,7 @@ class FireRectTool(Tool):
 
 class FixRectTool(Tool):
     tool_type = ToolType.FIX_RECT
+    param_names = ("mx_int", "my_int")
 
     def __init__(self):
         super().__init__()
@@ -177,7 +184,7 @@ class FixRectTool(Tool):
         self.erase_mode = False
 
     def apply(
-        self, mx_int: int, my_int: int, _brush_radius: int, _intensity: float = 1
+        self, mx_int: int, my_int: int
     ):
         # Only draw if first_point is set and this is the second click
         if self.first_point is not None:

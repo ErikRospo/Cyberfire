@@ -287,12 +287,16 @@ class FireWindow(QMainWindow):
         my_int = self.imy
         intensity = float(self.intensity_percent / 100)
 
-        for ttype, tool in self.tools.items():
+        for _, tool in self.tools.items():
             if tool.is_active():
-                try:
-                    tool.apply(mx_int, my_int, self.brush_radius, intensity)
-                except TypeError:
-                    tool.apply(mx_int, my_int, self.brush_radius)
+                params = {
+                    "mx_int": mx_int,
+                    "my_int": my_int,
+                    "brush_radius": self.brush_radius,
+                    "intensity": intensity,
+                }
+                tool_args = [params[name] for name in tool.param_names]
+                tool.apply(*tool_args)
         update_image()
         # Show highlight if highlight_fixed is active or if fix mode is active
         if (
