@@ -9,6 +9,7 @@ class ToolType(Enum):
     FIX_BRUSH = auto()
     FIX_ERASE = auto()
     HIGHLIGHT_FIXED = auto()
+    FIRE_LINE = auto()  # New tool type
 
 
 class Tool:
@@ -68,3 +69,50 @@ class HighlightFixedTool(Tool):
 
     def apply(self, _mx_int, _my_int, _brush_radius):
         highlight_fixed_pixels()
+
+
+class FireLineTool(Tool):
+    tool_type = ToolType.FIRE_LINE
+
+    def __init__(self):
+        super().__init__()
+        self.first_point = None
+
+    def set_first_point(self, mx_int, my_int):
+        self.first_point = (mx_int, my_int)
+
+    def clear_first_point(self):
+        self.first_point = None
+
+    def apply(self, mx_int:int, my_int:int, brush_radius):
+        # Only draw if first_point is set and this is the second click
+        if self.first_point is not None:
+            x0, y0 = self.first_point
+            x1, y1 = mx_int, my_int
+            # Bresenham's line algorithm
+            dx = abs(x1 - x0)
+            dy = abs(y1 - y0)
+            x, y = x0, y0
+            sx = 1 if x0 < x1 else -1
+            sy = 1 if y0 < y1 else -1
+            if dx > dy:
+                err = dx // 2
+                while x != x1:
+                    change_heat_at_position(x, y, radius=brush_radius, multiplier=1)
+                    err -= dy
+                    if err < 0:
+                        y += sy
+                        err += dx
+                    x += sx
+                change_heat_at_position(x, y, radius=brush_radius, multiplier=1)
+            else:
+                err = dy // 2
+                while y != y1:
+                    change_heat_at_position(x, y, radius=brush_radius, multiplier=1)
+                    err -= dx
+                    if err < 0:
+                        x += sx
+                        err += dy
+                    y += sy
+                change_heat_at_position(x, y, radius=brush_radius, multiplier=1)
+            self.clear_first_point()
