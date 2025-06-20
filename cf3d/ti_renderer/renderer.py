@@ -25,7 +25,7 @@ class Renderer:
         self.fov = ti.field(dtype=ti.f32, shape=())
         self.voxel_color = ti.Vector.field(3, dtype=ti.u8)
         self.voxel_material = ti.field(dtype=ti.i8)
-        self._voxel_alpha = ti.field(dtype=ti.f32)  # Internal: per-voxel alpha
+        self._voxel_alpha = ti.field(dtype=ti.f32) 
 
         self.light_direction = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.light_direction_noise = ti.field(dtype=ti.f32, shape=())
@@ -255,6 +255,7 @@ class Renderer:
                 # For light sources, we actually invert the material to make it
                 # more obvious
                 hit_light = 1 - hit_light
+                # hit_light=hit/
         return closest, normal, c, hit_light, hit_found
 
     @ti.kernel
@@ -339,12 +340,12 @@ class Renderer:
                     break
 
                 # Russian roulette
-                max_c = throughput.max()
-                if ti.random() > max_c:
-                    throughput = [0, 0, 0]
-                    break
-                else:
-                    throughput /= max_c
+                # max_c = throughput.max()
+                # if ti.random() > max_c:
+                #     throughput = [0, 0, 0]
+                #     break
+                # else:
+                #     throughput /= max_c
             # Tracing end
 
             if hit_light:
@@ -429,19 +430,23 @@ class Renderer:
         return mat, self.to_vec3(color)
 
     @ti.kernel
-    def read_fire_pixels(self, firePixels:ti.template(), colors:ti.template()):
-        # Copy firePixels and color palette into renderer's voxel fields
-        for x, y, z in ti.ndrange(self.voxel_grid_res, self.voxel_grid_res-1, self.voxel_grid_res):
+    def read_fire_pixels(self, firePixels: ti.template(), colors: ti.template()):
+        for x, y, z in ti.ndrange((1, self.voxel_grid_res - 1), (1, self.voxel_grid_res - 1), (1, self.voxel_grid_res - 1)):
             intensity = firePixels[x, y, z]
             if intensity > 0:
                 color = colors[intensity]
-                # Set material to 2 if intensity > 230, else 1
-                mat = 2 if intensity > 230 else 1
+                mat = 2
                 self.voxel_material[x, y, z] = mat
-                self.voxel_color[x, y, z] = color
-                # Set alpha proportional to intensity (max=1.0, min=0.0)
-                self._voxel_alpha[x, y, z] = ti.cast(intensity, ti.f32)/MAX_INTENSITY
+                # Convert color to tuple to avoid channel split
+                self.voxel_color[x, y, z] = (color[0], color[1], color[2])
+                v = ti.cast(intensity, ti.f32) / MAX_INTENSITY
+                self._voxel_alpha[x, y, z] = v * v
+                
             else:
                 self.voxel_material[x, y, z] = 0
                 self.voxel_color[x, y, z] = (0, 0, 0)
                 self._voxel_alpha[x, y, z] = 0.0
+            if y==self.voxel_grid_res-2:
+                self._voxel_alpha[x,y,z]=1
+                self.voxel_color[x,y,z]=(0,0,0)
+                self.voxel_material[x,y,z]=1

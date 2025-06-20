@@ -38,7 +38,7 @@ def get_palette_list():
 def set_palette(palette_func):
     palette = palette_func()
     for i in range(MAX_INTENSITY + 1):
-        colors[i] = palette[i]
+        colors[i] = tuple(int(x) for x in palette[i])  # Ensure tuple of ints
 
 
 # --- 3D Perlin noise and fire spread ---
@@ -132,7 +132,7 @@ def initialize_fire():
 
 
 # --- Rendering setup ---
-scene = Scene(exposure=1)
+scene = Scene(exposure=1,voxel_edges=0)
 # scene.set_background_color((1, 252 / 256, 234 / 256))
 scene.set_background_color((0, 4 / 256, 22 / 256))
 
@@ -166,7 +166,8 @@ def render_scene():
     scene.renderer.read_fire_pixels(firePixels, colors)
     # Camera parameters must be set from the GUI before calling this function
     scene.renderer.reset_framebuffer()
-    scene.renderer.accumulate()
+    for n in range(3):
+        scene.renderer.accumulate()
     img = scene.renderer.fetch_image()
     return img
 
