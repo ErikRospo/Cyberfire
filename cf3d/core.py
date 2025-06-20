@@ -206,13 +206,13 @@ def clear_image():
         for c in ti.static(range(3)):
             image[x, y, c] = 0
 
-proj = ti.field(dtype=ti.i32, shape=(3,2))
+proj = ti.field(dtype=ti.i32, shape=(2, 3))
 
 @ti.kernel
-def rasterize(yaw: float, pitch: float, distance: float):
+def rasterize(yaw: float, pitch: float, distance: float, pan_x: float, pan_y: float):
     # Camera parameters
-    cx = FIRE_WIDTH / 2
-    cy = FIRE_HEIGHT / 2
+    cx = FIRE_WIDTH / 2 - pan_x * FIRE_WIDTH
+    cy = FIRE_HEIGHT / 2 - pan_y * FIRE_HEIGHT
     cz = FIRE_DEPTH / 2
     fov = 1.2  # radians, for perspective
     aspect = FIRE_WIDTH / FIRE_HEIGHT

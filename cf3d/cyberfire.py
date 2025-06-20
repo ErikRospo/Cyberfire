@@ -30,7 +30,10 @@ class FireWindow(QMainWindow):
         self.last_mouse_pos = None
         self.is_dragging = False
         self.camera_distance = 2.5  # for perspective
-
+        # --- Pan state ---
+        self.camera_pan_x = 0.0
+        self.camera_pan_y = 0.0
+        self.is_panning = False
         # --- FPS Counter ---
         self.last_fps_time = time.time()
         self.frame_count = 0
@@ -64,6 +67,7 @@ class FireWindow(QMainWindow):
         self.label.mouseMoveEvent = self.mouseMoveEvent
         self.label.mousePressEvent = self.mousePressEvent
         self.label.mouseReleaseEvent = self.mouseReleaseEvent
+        self.label.wheelEvent = self.wheelEvent
 
     @property
     def imx(self):
@@ -143,21 +147,43 @@ class FireWindow(QMainWindow):
             self.last_mouse_pos = (
                 event.position() if hasattr(event, "position") else event.pos()
             )
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.is_panning = True
+            self.last_mouse_pos = (
+                event.position() if hasattr(event, "position") else event.pos()
+            )
 
     def mouseMoveEvent(self, event):
+        pos = event.position() if hasattr(event, "position") else event.pos()
         if self.is_dragging and self.last_mouse_pos is not None:
-            pos = event.position() if hasattr(event, "position") else event.pos()
             dx = pos.x() - self.last_mouse_pos.x()
             dy = pos.y() - self.last_mouse_pos.y()
             self.camera_yaw += dx * 0.01
             self.camera_pitch += dy * 0.01
             self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2, np.pi / 2)
             self.last_mouse_pos = pos
+        elif self.is_panning and self.last_mouse_pos is not None:
+            dx = pos.x() - self.last_mouse_pos.x()
+            dy = pos.y() - self.last_mouse_pos.y()
+            # Pan speed factor can be tuned
+            self.camera_pan_x += dx * 0.01
+            self.camera_pan_y += dy * 0.01
+            self.last_mouse_pos = pos
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.is_dragging = False
             self.last_mouse_pos = None
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.is_panning = False
+            self.last_mouse_pos = None
+
+    def wheelEvent(self, event: QWheelEvent):
+        # Zoom in/out with mouse wheel
+        delta = event.angleDelta().y() / 120  # 120 per notch
+        self.camera_distance -= delta * 0.1
+        self.camera_distance = np.clip(self.camera_distance, 1.0, 10.0)
+        event.accept()
 
     def update_frame(self):
         self.current_time += 0.05
@@ -165,8 +191,8 @@ class FireWindow(QMainWindow):
 
         marching_cubes()
         clear_image()
-        # TODO: rasterize kernel must accept camera_yaw, camera_pitch, camera_distance
-        rasterize(self.camera_yaw, self.camera_pitch, self.camera_distance)
+        # Pass pan offsets to rasterize
+        rasterize(self.camera_yaw, self.camera_pitch, self.camera_distance, self.camera_pan_x, self.camera_pan_y)
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img = np.rot90(np_img).copy()
