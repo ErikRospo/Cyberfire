@@ -14,6 +14,7 @@ ti.init(arch=ti.gpu)
 
 # 3D Fire simulation field: (width, height, depth)
 firePixels = ti.field(dtype=ti.i32, shape=(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH))
+print(type(firePixels))
 # Color palette
 colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_INTENSITY + 1))
 
@@ -161,28 +162,8 @@ def set_background_color(color):
     scene.set_background_color(color)
 
 
-# Update scene voxels from firePixels
-@ti.kernel
-def update_scene_voxels_from_fire():
-    for x, y, z in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH):
-        intensity = firePixels[x, y, z]
-        intensity = ti.math.clamp(intensity, 0, MAX_INTENSITY - 1)
-
-        if intensity > 0:
-            color = colors[intensity]
-            voxel_type = 2 if intensity > 230 else 1
-            scene.renderer.set_voxel(
-                ti.Vector([x, y, z]),
-                voxel_type,
-                ti.Vector([color[0], color[1], color[2]]),
-            )
-        else:
-            # Optionally clear voxel (set material to 0)
-            scene.renderer.set_voxel(ti.Vector([x, y, z]), 0, ti.Vector([0, 0, 0]))
-
-
 def render_scene():
-    update_scene_voxels_from_fire()
+    scene.renderer.read_fire_pixels(firePixels, colors)
     # Camera parameters must be set from the GUI before calling this function
     scene.renderer.reset_framebuffer()
     scene.renderer.accumulate()

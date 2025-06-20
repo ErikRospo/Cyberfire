@@ -240,7 +240,7 @@ class FireWindow(QMainWindow):
         cam_pos = np.array([x, y, z], dtype=np.float32)
         # Calculate up vector based on pitch/yaw
         # This keeps the up vector perpendicular to the view direction
-        up = np.array([0, 1, 0], dtype=np.float32)
+        up = np.array([0, -1, 0], dtype=np.float32)
         view = target - cam_pos
         view /= np.linalg.norm(view)
         right = np.cross(up, view)
@@ -266,7 +266,7 @@ class FireWindow(QMainWindow):
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
         self.label.setPixmap(QPixmap.fromImage(qimg))
-
+        scene.renderer.reset_framebuffer()
         # --- FPS Counter update ---
         self.frame_count += 1
         now = time.time()
