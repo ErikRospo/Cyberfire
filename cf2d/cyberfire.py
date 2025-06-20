@@ -307,9 +307,7 @@ class FireWindow(QMainWindow):
                 tool.apply(*tool_args)
         update_image()
         # Show highlight if highlight_fixed is active or if fix mode is active
-        if (
-            self.tools[ToolType.HIGHLIGHT_FIXED].is_active()
-        ):
+        if self.tools[ToolType.HIGHLIGHT_FIXED].is_active():
             highlight_fixed_pixels()
         # Fade alpha from 80 to 0 over 2 seconds
         elapsed = time.time() - self.brush_changed

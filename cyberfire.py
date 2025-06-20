@@ -1,11 +1,13 @@
-from pathlib import Path
-import sys
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QRadioButton, QPushButton, QMessageBox
-)
-from PySide6.QtCore import Qt
-import subprocess
 import os
+import subprocess
+import sys
+from pathlib import Path
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QApplication, QMessageBox, QPushButton,
+                               QRadioButton, QVBoxLayout, QWidget)
+
+
 class ModeSelector(QWidget):
     def __init__(self):
         super().__init__()
@@ -28,13 +30,14 @@ class ModeSelector(QWidget):
     def launch(self):
         if self.radio_2d.isChecked():
 
-            env=os.environ.copy()
-            env["PYTHONPATH"]=str(Path.cwd()/"cf2d")
-            subprocess.Popen([sys.executable, "-m", "cf2d.cyberfire"],env=env)
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(Path.cwd() / "cf2d")
+            subprocess.Popen([sys.executable, "-m", "cf2d.cyberfire"], env=env)
             self.close()
             return
         elif self.radio_3d.isChecked():
             QMessageBox.warning(self, "Info", "3D mode not implemented yet.")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

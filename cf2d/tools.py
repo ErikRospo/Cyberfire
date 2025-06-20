@@ -86,6 +86,7 @@ class HighlightFixedTool(Tool):
     def apply(self):
         highlight_fixed_pixels()
 
+
 class FireLineTool(Tool):
     tool_type = ToolType.FIRE_LINE
     param_names = ("mx_int", "my_int", "brush_radius", "intensity")
@@ -183,9 +184,7 @@ class FixRectTool(Tool):
         self.first_point = None
         self.erase_mode = False
 
-    def apply(
-        self, mx_int: int, my_int: int
-    ):
+    def apply(self, mx_int: int, my_int: int):
         # Only draw if first_point is set and this is the second click
         if self.first_point is not None:
             x0, y0 = self.first_point

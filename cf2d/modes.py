@@ -35,6 +35,7 @@ class FireMode(Mode):
     def __init__(self):
         super().__init__(ToolType.FIRE_BRUSH, ToolType.FIRE_ERASE)
 
+
 class HighlightFixedMixin(Mode):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,5 +76,3 @@ class FireLineMode(Mode):
 class FireRectMode(Mode):
     def __init__(self):
         super().__init__(ToolType.FIRE_RECT, ToolType.FIRE_RECT)
-
-
