@@ -183,11 +183,12 @@ def set_background_color(color):
 def update_scene_voxels_from_fire():
     for x, y, z in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH):
         intensity = firePixels[x, y, z]
+        intensity=ti.math.clamp(intensity,0,MAX_INTENSITY-1)
+
         if intensity > 0:
             color = colors[intensity]
-            # Set voxel as MAT_LAMBERTIAN (1), color normalized to [0,1]
             scene.renderer.set_voxel(
-                ti.Vector([x, y, z]), 1, ti.Vector([color[0], color[1], color[2]])
+                ti.Vector([x, y, z]), 1, ti.Vector([color[0]//256, color[1]//256, color[2]//256])
             )
         else:
             # Optionally clear voxel (set material to 0)

@@ -1,6 +1,7 @@
 import taichi as ti
 
 from ti_renderer.math_utils import eps, inf, out_dir, ray_aabb_intersection
+from constants import FIRE_WIDTH
 
 MAX_RAY_DEPTH = 4
 use_directional_light = True
@@ -46,12 +47,13 @@ class Renderer:
         self.voxel_dx = dx
         self.voxel_inv_dx = 1 / dx
         # Note that voxel_inv_dx == voxel_grid_res iff the box has width = 1
-        self.voxel_grid_res = 128
-        voxel_grid_offset = [-self.voxel_grid_res // 2 for _ in range(3)]
+        # Import constants from the constants.py file
+
+        self.voxel_grid_res = FIRE_WIDTH
 
         ti.root.dense(ti.ij, image_res).place(self.color_buffer)
         ti.root.dense(ti.ijk, self.voxel_grid_res).place(
-            self.voxel_color, self.voxel_material, offset=voxel_grid_offset
+            self.voxel_color, self.voxel_material
         )
 
         self._rendered_image = ti.Vector.field(3, float, image_res)
