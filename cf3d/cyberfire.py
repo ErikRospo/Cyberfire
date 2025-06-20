@@ -25,9 +25,11 @@ class FireWindow(QMainWindow):
 
         # --- Camera rotation state ---
         self.camera_yaw = -np.pi / 2  # Start facing into the scene
-        self.camera_pitch = -0.3      # Slightly above
+        self.camera_pitch = -0.3  # Slightly above
         self.camera_distance = 2.5
-        self.camera_target = np.array([FIRE_WIDTH / 2, FIRE_HEIGHT / 2, FIRE_DEPTH / 2], dtype=np.float32)
+        self.camera_target = np.array(
+            [FIRE_WIDTH / 2, FIRE_HEIGHT / 2, FIRE_DEPTH / 2], dtype=np.float32
+        )
         self.last_mouse_pos = None
         self.is_dragging = False
         self.is_panning = False
@@ -148,11 +150,12 @@ class FireWindow(QMainWindow):
         self.camera_yaw = 0.0
         self.camera_pitch = 0.0
         self.camera_distance = 2.5
-        self.camera_target = np.array([FIRE_WIDTH / 2, FIRE_HEIGHT / 2, FIRE_DEPTH / 2], dtype=np.float32)
+        self.camera_target = np.array(
+            [FIRE_WIDTH / 2, FIRE_HEIGHT / 2, FIRE_DEPTH / 2], dtype=np.float32
+        )
         self.is_dragging = False
         self.is_panning = False
         self.last_mouse_pos = None
-
 
     def clear_fire(self):
         firePixels.fill(0)
@@ -199,7 +202,9 @@ class FireWindow(QMainWindow):
             # Orbit: update yaw/pitch
             self.camera_yaw += dx * 0.01
             self.camera_pitch -= dy * 0.01
-            self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2 + 0.05, np.pi / 2 - 0.05)
+            self.camera_pitch = np.clip(
+                self.camera_pitch, -np.pi / 2 + 0.05, np.pi / 2 - 0.05
+            )
         elif self.is_panning:
             # Pan: move target in camera's right/world up plane
             cam_pos, look_at, up = self.compute_camera()
@@ -260,8 +265,8 @@ class FireWindow(QMainWindow):
         image = render_scene()
         np_img = image.to_numpy()
         np_img = np.rot90(np_img)
-        np_img=np.flipud(np_img)
-        np_img = np.astype(np_img*256, np.uint8).copy()
+        np_img = np.flipud(np_img)
+        np_img = np.astype(np_img * 256, np.uint8).copy()
         h, w, ch = np_img.shape
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)

@@ -1,4 +1,5 @@
 from typing import Self
+
 import taichi as ti
 
 from constants import FIRE_WIDTH, MAX_INTENSITY
@@ -25,7 +26,7 @@ class Renderer:
         self.fov = ti.field(dtype=ti.f32, shape=())
         self.voxel_color = ti.Vector.field(3, dtype=ti.u8)
         self.voxel_material = ti.field(dtype=ti.i8)
-        self._voxel_alpha = ti.field(dtype=ti.f32) 
+        self._voxel_alpha = ti.field(dtype=ti.f32)
 
         self.light_direction = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.light_direction_noise = ti.field(dtype=ti.f32, shape=())
@@ -40,7 +41,6 @@ class Renderer:
         self.camera_pos = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.look_at = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.up = ti.Vector.field(3, dtype=ti.f32, shape=())
-
 
         self.background_color = ti.Vector.field(3, dtype=ti.f32, shape=())
 
@@ -59,7 +59,6 @@ class Renderer:
         self._rendered_image = ti.Vector.field(3, float, image_res)
         self.set_up(*up)
         self.set_fov(0.23)
-
 
     def set_directional_light(self, direction, light_direction_noise, light_color):
         direction_norm = (
@@ -145,7 +144,7 @@ class Renderer:
     @ti.func
     def sdf_normal(self, p):
         return ti.Vector([0.0, 1.0, 0.0])  # up
-    
+
     @ti.func
     def dda_voxel(self, eye_pos, d):
         for i in ti.static(range(3)):
@@ -188,7 +187,9 @@ class Renderer:
                         # --- Alpha hit test ---
                         alpha = self._voxel_alpha[ipos]
                         if ti.random() < alpha:
-                            mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+                            mini = (
+                                ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5
+                            ) * rinv
                             hit_distance = mini.max() * self.voxel_dx + near
                             hit_pos = eye_pos + (hit_distance + 1e-3) * d
                             voxel_index = self._to_voxel_index(hit_pos)
@@ -311,7 +312,12 @@ class Renderer:
                 depth += 1
                 closest, normal, c, hit_light, hit_found = self.next_hit(pos, d, t)
                 hit_pos = pos + closest * d
-                if hit_found and not hit_light and ti.math.length(normal) != 0 and closest < 1e8:
+                if (
+                    hit_found
+                    and not hit_light
+                    and ti.math.length(normal) != 0
+                    and closest < 1e8
+                ):
                     d = out_dir(normal)
                     pos = hit_pos + 1e-4 * d
                     throughput *= c
@@ -327,7 +333,9 @@ class Renderer:
                             )
                             * self.light_direction_noise[None]
                         )
-                        light_dir = ti.math.normalize(self.light_direction[None] + dir_noise)
+                        light_dir = ti.math.normalize(
+                            self.light_direction[None] + dir_noise
+                        )
                         dot = light_dir.dot(normal)
                         if dot > 0:
                             hit_light_ = 0
@@ -431,7 +439,11 @@ class Renderer:
 
     @ti.kernel
     def read_fire_pixels(self, firePixels: ti.template(), colors: ti.template()):
-        for x, y, z in ti.ndrange((1, self.voxel_grid_res - 1), (1, self.voxel_grid_res - 1), (1, self.voxel_grid_res - 1)):
+        for x, y, z in ti.ndrange(
+            (1, self.voxel_grid_res - 1),
+            (1, self.voxel_grid_res - 1),
+            (1, self.voxel_grid_res - 1),
+        ):
             intensity = firePixels[x, y, z]
             if intensity > 0:
                 color = colors[intensity]
@@ -441,12 +453,12 @@ class Renderer:
                 self.voxel_color[x, y, z] = (color[0], color[1], color[2])
                 v = ti.cast(intensity, ti.f32) / MAX_INTENSITY
                 self._voxel_alpha[x, y, z] = v * v
-                
+
             else:
                 self.voxel_material[x, y, z] = 0
                 self.voxel_color[x, y, z] = (0, 0, 0)
                 self._voxel_alpha[x, y, z] = 0.0
-            if y==self.voxel_grid_res-2:
-                self._voxel_alpha[x,y,z]=1
-                self.voxel_color[x,y,z]=(0,0,0)
-                self.voxel_material[x,y,z]=1
+            if y == self.voxel_grid_res - 2:
+                self._voxel_alpha[x, y, z] = 1
+                self.voxel_color[x, y, z] = (0, 0, 0)
+                self.voxel_material[x, y, z] = 1
