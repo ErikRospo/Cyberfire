@@ -452,7 +452,7 @@ class Renderer:
                 # Convert color to ti.Vector to avoid channel split
                 self.voxel_color[x, y, z] = ti.Vector([color[0], color[1], color[2]])
                 v = ti.cast(intensity, ti.f32) / MAX_INTENSITY
-                self._voxel_alpha[x, y, z] = (v * v)/2
+                self._voxel_alpha[x, y, z] = (v * v) / 2
             else:
                 self.voxel_material[x, y, z] = 0
                 self.voxel_color[x, y, z] = ti.Vector([0, 0, 0])

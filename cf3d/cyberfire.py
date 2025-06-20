@@ -267,7 +267,7 @@ class FireWindow(QMainWindow):
         np_img = image.to_numpy()
         np_img = np.rot90(np_img)
         np_img = np.flipud(np_img)
-        np_img=np.clip(np_img,0,1)
+        np_img = np.clip(np_img, 0, 1)
         np_img = np.astype(np_img * 255, np.uint8).copy()
         h, w, ch = np_img.shape
         bytes_per_line = ch * w
