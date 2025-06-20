@@ -136,15 +136,11 @@ def initialize_fire():
         firePixels[x, FIRE_HEIGHT - 1, z] = MAX_INTENSITY
 
 
-# --- Marching Cubes ---
-# Simple implementation for isosurface extraction
-# For brevity, only a basic version is provided. For production, use a full lookup table.
-
-iso_level = MAX_INTENSITY // 2
+iso_level = MAX_INTENSITY*0.2
 
 
 @ti.func
-def vertex_interp(p1, p2, valp1, valp2):
+def vertex_interp(p1, p2, valp1:int, valp2:int):
     if abs(iso_level - valp1) < 1e-5:
         return p1
     if abs(iso_level - valp2) < 1e-5:
@@ -154,9 +150,6 @@ def vertex_interp(p1, p2, valp1, valp2):
     mu = (iso_level - valp1) / (valp2 - valp1)
     return p1 + mu * (p2 - p1)
 
-
-# Full edge table and triangle table for Marching Cubes
-# These tables are standard and widely available (public domain, e.g. Paul Bourke, VTK, Wikipedia)
 
 edge_table = ti.field(dtype=ti.i32, shape=256)
 tri_table = ti.field(dtype=ti.i32, shape=(256, 16))
@@ -172,30 +165,72 @@ for i, row in enumerate(tri_table_np):
 edge_table.from_numpy(edge_table_arr)
 tri_table.from_numpy(tri_table_arr)
 
-
 @ti.kernel
 def marching_cubes():
     num_triangles[None] = 0
     for x, y, z in ti.ndrange(FIRE_WIDTH - 1, FIRE_HEIGHT - 1, FIRE_DEPTH - 1):
+        # Gather cube corner values
         cube = ti.Vector([0.0] * 8)
         for i in ti.static(range(8)):
             dx = i & 1
             dy = (i >> 1) & 1
             dz = (i >> 2) & 1
             cube[i] = firePixels[x + dx, y + dy, z + dz]
+
+        # Determine cube index
         cube_index = 0
         for i in ti.static(range(8)):
             if cube[i] > iso_level:
                 cube_index |= 1 << i
+
+        # Skip empty cubes
         if edge_table[cube_index] == 0:
             continue
+
+        # Interpolate vertices on cube edges
         vertlist = [ti.Vector([0.0, 0.0, 0.0]) for _ in range(12)]
-        # ...vertex interpolation for each edge...
-        # ...for brevity, only a single triangle is generated if cube_index != 0...
-        if num_triangles[None] < MAX_TRIANGLES:
-            for t in ti.static(range(3)):
-                triangles[num_triangles[None], t] = ti.Vector([x + t, y, z])
-            triangle_colors[num_triangles[None]] = colors[int(cube[0])]
+        # Cube corner positions
+        p = [
+            ti.Vector([x + 0, y + 0, z + 0]),
+            ti.Vector([x + 1, y + 0, z + 0]),
+            ti.Vector([x + 1, y + 1, z + 0]),
+            ti.Vector([x + 0, y + 1, z + 0]),
+            ti.Vector([x + 0, y + 0, z + 1]),
+            ti.Vector([x + 1, y + 0, z + 1]),
+            ti.Vector([x + 1, y + 1, z + 1]),
+            ti.Vector([x + 0, y + 1, z + 1]),
+        ]
+        # Edge to corner indices
+        edge_corners = [
+            (0, 1), (1, 2), (2, 3), (3, 0),
+            (4, 5), (5, 6), (6, 7), (7, 4),
+            (0, 4), (1, 5), (2, 6), (3, 7)
+        ]
+        for i in ti.static(range(12)):
+            if (edge_table[cube_index] & (1 << i)):
+                a0 = int(edge_corners[i][0])
+                b0= int(edge_corners[i][1])
+                
+                vertlist[i] = vertex_interp(
+                    p[a0], p[b0], cube[a0], cube[b0]
+                )
+
+        # Output triangles
+        for t in ti.static(range(5)):  # up to 5 triangles per cube
+            if tri_table[cube_index, 3 * t] == -1:
+                break
+            if num_triangles[None] >= MAX_TRIANGLES:
+                break
+            for v in ti.static(range(3)):
+                edge_idx = int(tri_table[cube_index, 3 * t + v])
+                triangles[num_triangles[None], v] = vertlist[edge_idx]
+            # Use average intensity for color
+            avg_intensity = 0.0
+            for i in ti.static(range(8)):
+                avg_intensity += cube[i]
+            avg_intensity = avg_intensity / 8.0
+            color_idx = ti.min(MAX_INTENSITY, ti.max(0, int(avg_intensity)))
+            triangle_colors[num_triangles[None]] = colors[color_idx]
             num_triangles[None] += 1
 
 
@@ -263,6 +298,7 @@ def rasterize(yaw: float, pitch: float, distance: float, pan_x: float, pan_y: fl
                     w1 = ((y2 - y0) * (x - x2) + (x0 - x2) * (y - y2)) / denom
                     w2 = 1 - w0 - w1
                     if w0 >= 0 and w1 >= 0 and w2 >= 0:
+                        # Flip the y-axis for correct image orientation
                         for c in ti.static(range(3)):
                             image[x, FIRE_HEIGHT - 1 - y, c] = triangle_colors[i][c]
 
