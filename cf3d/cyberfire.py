@@ -209,12 +209,12 @@ class FireWindow(QMainWindow):
         cam_x = (
             np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x 
         )
-        cam_y = np.sin(pitch) * distance + self.camera_pan_y + distance
-        cam_z = np.cos(pitch) * np.cos(yaw) * distance + distance
+        cam_y = np.sin(pitch) * distance + self.camera_pan_y 
+        cam_z = np.cos(pitch) * np.cos(yaw) * distance 
         up = (0, 1, 0)
 
         scene.renderer.set_camera_pos(cam_x*FIRE_WIDTH, cam_y*FIRE_HEIGHT, cam_z*FIRE_DEPTH)
-        scene.renderer.set_look_at(self.camera_pan_x*FIRE_WIDTH, self.camera_pan_y*FIRE_HEIGHT, 0)
+        scene.renderer.set_look_at(self.camera_pan_x, self.camera_pan_y, 0)
         scene.set_up(up)
 
         image = render_scene()

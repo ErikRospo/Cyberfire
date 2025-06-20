@@ -132,7 +132,9 @@ def initialize_fire():
 
 # --- Rendering setup ---
 scene = Scene(exposure=1)
-scene.set_background_color((1, 252 / 256, 234 / 256))
+# scene.set_background_color((1, 252 / 256, 234 / 256))
+scene.set_background_color((0, 4 / 256, 22 / 256))
+
 
 
 def set_camera_pos(pos):
