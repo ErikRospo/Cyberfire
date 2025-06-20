@@ -160,6 +160,13 @@ class FireWindow(QMainWindow):
         self.is_dragging = False
         self.is_panning = False
         self.last_mouse_pos = None
+        self.render_passes=1
+        for n in range(100):
+            self.current_time += 0.05
+            do_fire(self.current_time)
+        self.update_frame()
+        self.frame_fire()
+        self.update_frame()
 
     def clear_fire(self):
         firePixels.fill(0)

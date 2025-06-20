@@ -130,7 +130,6 @@ def initialize_fire():
         firePixels[x, FIRE_HEIGHT - 1, z] = MAX_INTENSITY
 
 
-# --- Rendering setup ---
 scene = Scene(exposure=1, voxel_edges=0)
 scene.set_background_color((0, 0, 0))
 
@@ -161,31 +160,9 @@ def set_background_color(color):
 
 def render_scene(passes=1):
     scene.renderer.read_fire_pixels(firePixels, colors)
-    # Camera parameters must be set from the GUI before calling this function
     scene.renderer.reset_framebuffer()
     for n in range(passes):
         scene.renderer.accumulate()
     img = scene.renderer.fetch_image()
     return img
 
-
-# --- Utility kernels for fire manipulation (3D) ---
-@ti.kernel
-def change_heat_at_position(mx: int, my: int, mz: int, radius: int, multiplier: float):
-    for dx, dy, dz in ti.ndrange(
-        (-radius, radius), (-radius, radius), (-radius, radius)
-    ):
-        x = mx + dx
-        y = my + dy
-        z = mz + dz
-        if 0 <= x < FIRE_WIDTH and 0 <= y < FIRE_HEIGHT and 0 <= z < FIRE_DEPTH:
-            dist = (dx * dx + dy * dy + dz * dz) ** 0.5
-            if dist <= radius:
-                delta = int(
-                    MAX_INTENSITY
-                    * (1 - dist / radius)
-                    * multiplier
-                    * multiplier
-                    * (ti.abs(multiplier) / multiplier)
-                )
-                firePixels[x, y, z] = ti.min(MAX_INTENSITY, firePixels[x, y, z] + delta)
