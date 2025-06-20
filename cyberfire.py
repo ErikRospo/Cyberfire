@@ -49,7 +49,10 @@ class FireWindow(QMainWindow):
             ToolType.FIRE_RECT: FireRectTool(),
             ToolType.FIX_RECT: FixRectTool(),
         }
-
+        # --- FPS Counter ---
+        self.last_fps_time = time.time()
+        self.frame_count = 0
+        self.fps = 0
         # Use palette list from core.py
         self.palettes = get_palette_list()
         self.palette_idx = 0
@@ -192,6 +195,11 @@ class FireWindow(QMainWindow):
         self.reset_fixed_btn = reset_fixed_btn
 
         layout.addStretch(1)
+
+        # --- FPS Counter ---
+        self.fps_label = QLabel("FPS: 0", panel)
+        layout.addWidget(self.fps_label)
+
         panel.setLayout(layout)
         return panel
 
@@ -321,6 +329,16 @@ class FireWindow(QMainWindow):
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
         self.label.setPixmap(QPixmap.fromImage(qimg))
+
+        # --- FPS Counter update ---
+        self.frame_count += 1
+        now = time.time()
+        elapsed_fps = now - self.last_fps_time
+        if elapsed_fps >= 0.25:
+            self.fps = int(self.frame_count / elapsed_fps)
+            self.fps_label.setText(f"FPS: {self.fps}")
+            self.last_fps_time = now
+            self.frame_count = 0
 
     def mousePressEvent(self, event: QMouseEvent):
         self.update_mouse_position(event)
