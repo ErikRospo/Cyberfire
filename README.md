@@ -60,7 +60,7 @@ This code was originally inspired by [Fabien Sanglard's blog](https://fabiensang
 
 ## Cyberfire 3d
 
-Cyberfire 3D is a porting/expansion of the algorithm of the 2D version into 3 dimensions. It features a ray-traced voxel renderer, modified from Taichi's [example renderer](https://github.com/taichi-dev/voxel-challenge). It is much harder to run than the 2d version, and even with a 3090, I was only able to get it to run at 20 FPS using 3 passes. It also features less interactivity, due to the difficulty of smooth, satisfying 3d interaction with most input devices. That being said, the controls use the mouse to click and drag to rotate and pan, with scrolling zooming in and out.
+Cyberfire 3D is a porting/expansion of the algorithm of the 2D version into 3 dimensions. It features a ray-traced voxel renderer, modified from Taichi's [example renderer](https://github.com/taichi-dev/voxel-challenge). It is much harder to run than the 2d version, and even with a 3090, I was only able to get it to run at 20 FPS using 3 passes. It also features less interactivity, due to the difficulty of smooth, satisfying 3d interaction with most input devices. That being said, the controls use the mouse to click and drag to rotate and pan, with scrolling zooming in and out. This version requires some sort of GPU acceleration to use, as frames may take several seconds to render. 
 
 
 ## Requirements
