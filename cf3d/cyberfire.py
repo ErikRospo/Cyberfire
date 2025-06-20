@@ -210,7 +210,7 @@ class FireWindow(QMainWindow):
             up_vec = np.cross(right, forward)
             up_vec /= np.linalg.norm(up_vec)
             pan_speed = self.camera_distance * 0.002
-            self.camera_target += right * (-dx * pan_speed) + up_vec * (dy * pan_speed)
+            self.camera_target += right * (dx * pan_speed) + up_vec * (-dy * pan_speed)
         self.last_mouse_pos = pos
 
     def mouseReleaseEvent(self, event):
@@ -260,8 +260,9 @@ class FireWindow(QMainWindow):
 
         image = render_scene()
         np_img = image.to_numpy()
-        np_img = np.rot90(np_img * 256)
-        np_img = np.astype(np_img, np.uint8).copy()
+        np_img = np.rot90(np_img)
+        np_img=np.flipud(np_img)
+        np_img = np.astype(np_img*256, np.uint8).copy()
         h, w, ch = np_img.shape
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
