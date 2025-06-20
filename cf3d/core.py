@@ -14,7 +14,6 @@ ti.init(arch=ti.gpu)
 
 # 3D Fire simulation field: (width, height, depth)
 firePixels = ti.field(dtype=ti.i32, shape=(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH))
-print(type(firePixels))
 # Color palette
 colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_INTENSITY + 1))
 
@@ -134,7 +133,7 @@ def initialize_fire():
 # --- Rendering setup ---
 scene = Scene(exposure=1,voxel_edges=0)
 # scene.set_background_color((1, 252 / 256, 234 / 256))
-scene.set_background_color((0, 4 / 256, 22 / 256))
+scene.set_background_color((0,0,0))
 
 
 
