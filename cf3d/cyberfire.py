@@ -8,9 +8,8 @@ from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QHBoxLayout, QLabel, QMainWindow, QPushButton,
                                QRadioButton, QSlider, QVBoxLayout, QWidget)
-import taichi
 
-from core import (FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
+from core import (FIRE_DEPTH, FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
                   get_palette_list, initialize_fire, render_scene, scene)
 
 
@@ -29,7 +28,7 @@ class FireWindow(QMainWindow):
         self.camera_pitch = 0.0  # up/down
         self.last_mouse_pos = None
         self.is_dragging = False
-        self.camera_distance = 500  # for perspective
+        self.camera_distance = 2.5  # for perspective
         # --- Pan state ---
         self.camera_pan_x = 0.0
         self.camera_pan_y = 0.0
@@ -57,6 +56,7 @@ class FireWindow(QMainWindow):
 
         self.resize(FIRE_WIDTH, FIRE_HEIGHT)
         initialize_fire()
+        scene.renderer.recompute_bbox()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
@@ -135,6 +135,7 @@ class FireWindow(QMainWindow):
     def reset_all(self):
         firePixels.fill(0)
         initialize_fire()
+        scene.renderer.recompute_bbox()
 
         self.palettes[self.palette_idx][1]()
 
@@ -181,8 +182,9 @@ class FireWindow(QMainWindow):
     def wheelEvent(self, event: QWheelEvent):
         # Zoom in/out with mouse wheel
         delta = event.angleDelta().y() / 120  # 120 per notch
-        self.camera_distance -= delta * 0.1
-        self.camera_distance = np.clip(self.camera_distance, 1.0, 600.0)
+        self.camera_distance -= delta * 0.2
+        self.camera_distance = np.clip(self.camera_distance, 0.26, 10.0)
+        print(self.camera_distance)
         event.accept()
 
     def update_frame(self):
@@ -191,13 +193,15 @@ class FireWindow(QMainWindow):
 
         # Compute camera position and look-at based on yaw, pitch, pan, distance
         yaw = self.camera_yaw
-        pitch = self.camera_pitch
+        pitch = self.camera_pitch+self.current_time
         distance = self.camera_distance
 
         # Spherical coordinates to cartesian
-        cam_x = np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x
-        cam_y = np.sin(pitch) * distance + self.camera_pan_y
-        cam_z = np.cos(pitch) * np.cos(yaw) * distance
+        cam_x = (
+            np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x + distance*FIRE_WIDTH // 2
+        )
+        cam_y = np.sin(pitch) * distance + self.camera_pan_y + distance*FIRE_HEIGHT // 2
+        cam_z = np.cos(pitch) * np.cos(yaw) * distance + distance*FIRE_DEPTH // 2
         up = (0, 1, 0)
 
         scene.renderer.set_camera_pos(cam_x, cam_y, cam_z)
@@ -207,8 +211,8 @@ class FireWindow(QMainWindow):
         image = render_scene()
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
-        np_img = np.rot90(np_img*256)
-        np_img=np.astype(np_img,np.uint8).copy()
+        np_img = np.rot90(np_img * 256)
+        np_img = np.astype(np_img, np.uint8).copy()
         h, w, ch = np_img.shape
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)

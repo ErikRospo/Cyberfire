@@ -3,7 +3,7 @@ import taichi as ti
 from ti_renderer.math_utils import np_normalize
 from ti_renderer.renderer import Renderer
 
-VOXEL_DX = 1 / 64
+VOXEL_DX = 1 / 16
 SCREEN_RES = (1280, 720)
 UP_DIR = (0, 1, 0)
 

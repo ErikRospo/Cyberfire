@@ -194,7 +194,7 @@ class Renderer:
                 if not self.inside_particle_grid(ipos):
                     running = 0
 
-                if last_sample:
+                if last_sample != 0:  # Only treat nonzero material as a hit
                     mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
                     hit_distance = mini.max() * self.voxel_dx + near
                     hit_pos = eye_pos + (hit_distance + 1e-3) * d

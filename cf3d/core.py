@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 import taichi as ti
 
@@ -131,7 +132,7 @@ def initialize_fire():
 
 # --- Rendering setup ---
 scene = Scene(exposure=1)
-scene.set_background_color((1,252/256, 234/256))
+scene.set_background_color((1, 252 / 256, 234 / 256))
 
 
 def set_camera_pos(pos):
@@ -167,18 +168,18 @@ def update_scene_voxels_from_fire():
 
         if intensity > 0:
             color = colors[intensity]
+            voxel_type = 2 if intensity > 230 else 1
             scene.renderer.set_voxel(
                 ti.Vector([x, y, z]),
-                2,
+                voxel_type,
                 ti.Vector([color[0], color[1], color[2]]),
             )
         else:
             # Optionally clear voxel (set material to 0)
             scene.renderer.set_voxel(ti.Vector([x, y, z]), 0, ti.Vector([0, 0, 0]))
 
-t=0
+
 def render_scene():
-    global t
     update_scene_voxels_from_fire()
     # Camera parameters must be set from the GUI before calling this function
     scene.renderer.reset_framebuffer()
