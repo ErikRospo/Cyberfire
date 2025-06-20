@@ -159,11 +159,11 @@ def set_background_color(color):
     scene.set_background_color(color)
 
 
-def render_scene():
+def render_scene(passes=1):
     scene.renderer.read_fire_pixels(firePixels, colors)
     # Camera parameters must be set from the GUI before calling this function
     scene.renderer.reset_framebuffer()
-    for n in range(3):
+    for n in range(passes):
         scene.renderer.accumulate()
     img = scene.renderer.fetch_image()
     return img

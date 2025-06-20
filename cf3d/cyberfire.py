@@ -22,6 +22,7 @@ class FireWindow(QMainWindow):
         self.mx = 0.5
         self.my = 0.5
         self.intensity_percent = 100
+        self.render_passes = 1  # New: number of render passes
 
         # --- Camera rotation state ---
         self.camera_yaw = -np.pi / 2  # Start facing into the scene
@@ -59,7 +60,11 @@ class FireWindow(QMainWindow):
 
         self.resize(FIRE_WIDTH, FIRE_HEIGHT)
         initialize_fire()
-        scene.renderer.recompute_bbox()
+        for n in range(100):
+            self.current_time += 0.05
+            do_fire(self.current_time)
+
+        self.frame_fire()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
@@ -71,7 +76,6 @@ class FireWindow(QMainWindow):
         self.label.mousePressEvent = self.mousePressEvent
         self.label.mouseReleaseEvent = self.mouseReleaseEvent
         self.label.wheelEvent = self.wheelEvent
-        self.frame_fire()
 
     @property
     def imx(self):
@@ -111,6 +115,22 @@ class FireWindow(QMainWindow):
         self.intensity_slider = intensity_slider
         self.intensity_label = intensity_label
 
+        # --- Render Passes Slider ---
+        passes_label = QLabel(f"Render Passes: {self.render_passes}", panel)
+        passes_slider = QSlider(Qt.Orientation.Horizontal, panel)
+        passes_slider.setMinimum(1)
+        passes_slider.setMaximum(10)
+        passes_slider.setValue(self.render_passes)
+        passes_slider.setTickInterval(1)
+        passes_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        passes_slider.valueChanged.connect(
+            lambda val: self.set_render_passes(val, passes_label)
+        )
+        layout.addWidget(passes_label)
+        layout.addWidget(passes_slider)
+        self.passes_slider = passes_slider
+        self.passes_label = passes_label
+
         # --- Reset/Clear Buttons ---
         reset_btn = QPushButton("Reset All")
         reset_btn.clicked.connect(self.reset_all)
@@ -141,6 +161,11 @@ class FireWindow(QMainWindow):
         self.intensity_percent = val
         if label is not None:
             label.setText(f"Intensity: {val}%")
+
+    def set_render_passes(self, val: int, label=None):
+        self.render_passes = val
+        if label is not None:
+            label.setText(f"Render Passes: {val}")
 
     def reset_all(self):
         firePixels.fill(0)
@@ -257,13 +282,11 @@ class FireWindow(QMainWindow):
     def update_frame(self):
         self.current_time += 0.05
         do_fire(self.current_time)
-
         cam_pos, look_at, up = self.compute_camera()
         scene.renderer.set_camera_pos(*cam_pos)
         scene.renderer.set_look_at(*look_at)
         scene.set_up(up)
-
-        image = render_scene()
+        image = render_scene(self.render_passes)
         np_img = image.to_numpy()
         np_img = np.rot90(np_img)
         np_img = np.flipud(np_img)
