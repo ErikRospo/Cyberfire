@@ -37,7 +37,7 @@ def get_palette_list():
 def set_palette(palette_func):
     palette = palette_func()
     for i in range(MAX_INTENSITY + 1):
-        colors[i] = tuple(int(x) for x in palette[i])  # Ensure tuple of ints
+        colors[i] = ti.Vector([int(x) for x in palette[i]])  # Ensure vector of ints
 
 
 # --- 3D Perlin noise and fire spread ---
@@ -132,7 +132,6 @@ def initialize_fire():
 
 # --- Rendering setup ---
 scene = Scene(exposure=1, voxel_edges=0)
-# scene.set_background_color((1, 252 / 256, 234 / 256))
 scene.set_background_color((0, 0, 0))
 
 

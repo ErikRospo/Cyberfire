@@ -71,6 +71,7 @@ class FireWindow(QMainWindow):
         self.label.mousePressEvent = self.mousePressEvent
         self.label.mouseReleaseEvent = self.mouseReleaseEvent
         self.label.wheelEvent = self.wheelEvent
+        self.frame_fire()
 
     @property
     def imx(self):
@@ -266,7 +267,8 @@ class FireWindow(QMainWindow):
         np_img = image.to_numpy()
         np_img = np.rot90(np_img)
         np_img = np.flipud(np_img)
-        np_img = np.astype(np_img * 256, np.uint8).copy()
+        np_img=np.clip(np_img,0,1)
+        np_img = np.astype(np_img * 255, np.uint8).copy()
         h, w, ch = np_img.shape
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)

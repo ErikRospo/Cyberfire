@@ -449,16 +449,16 @@ class Renderer:
                 color = colors[intensity]
                 mat = 2
                 self.voxel_material[x, y, z] = mat
-                # Convert color to tuple to avoid channel split
-                self.voxel_color[x, y, z] = (color[0], color[1], color[2])
+                # Convert color to ti.Vector to avoid channel split
+                self.voxel_color[x, y, z] = ti.Vector([color[0], color[1], color[2]])
                 v = ti.cast(intensity, ti.f32) / MAX_INTENSITY
                 self._voxel_alpha[x, y, z] = v * v
 
             else:
                 self.voxel_material[x, y, z] = 0
-                self.voxel_color[x, y, z] = (0, 0, 0)
+                self.voxel_color[x, y, z] = ti.Vector([0, 0, 0])
                 self._voxel_alpha[x, y, z] = 0.0
             if y == self.voxel_grid_res - 2:
                 self._voxel_alpha[x, y, z] = 1
-                self.voxel_color[x, y, z] = (0, 0, 0)
+                self.voxel_color[x, y, z] = ti.Vector([0, 0, 0])
                 self.voxel_material[x, y, z] = 1
