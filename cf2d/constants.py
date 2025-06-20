@@ -1,6 +1,7 @@
 # Constants
-FIRE_WIDTH = 1440
-FIRE_HEIGHT = 960
+import os
+FIRE_WIDTH = int(os.environ.get("FIRE_WIDTH", 1440))
+FIRE_HEIGHT = int(os.environ.get("FIRE_HEIGHT", 960))
 MAX_INTENSITY = 255
 
 ###Presets
