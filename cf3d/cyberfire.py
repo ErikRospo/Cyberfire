@@ -198,7 +198,7 @@ class FireWindow(QMainWindow):
         if self.is_dragging:
             # Orbit: update yaw/pitch
             self.camera_yaw += dx * 0.01
-            self.camera_pitch += dy * 0.01
+            self.camera_pitch -= dy * 0.01
             self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2 + 0.05, np.pi / 2 - 0.05)
         elif self.is_panning:
             # Pan: move target in camera's right/up plane
@@ -240,7 +240,7 @@ class FireWindow(QMainWindow):
         cam_pos = np.array([x, y, z], dtype=np.float32)
         # Calculate up vector based on pitch/yaw
         # This keeps the up vector perpendicular to the view direction
-        up = np.array([0, -1, 0], dtype=np.float32)
+        up = np.array([0, 1, 0], dtype=np.float32)
         view = target - cam_pos
         view /= np.linalg.norm(view)
         right = np.cross(up, view)

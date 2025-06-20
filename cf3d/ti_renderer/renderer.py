@@ -41,8 +41,6 @@ class Renderer:
         self.look_at = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.up = ti.Vector.field(3, dtype=ti.f32, shape=())
 
-        self.floor_height = ti.field(dtype=ti.f32, shape=())
-        self.floor_color = ti.Vector.field(3, dtype=ti.f32, shape=())
 
         self.background_color = ti.Vector.field(3, dtype=ti.f32, shape=())
 
@@ -62,8 +60,6 @@ class Renderer:
         self.set_up(*up)
         self.set_fov(0.23)
 
-        self.floor_height[None] = 0
-        self.floor_color[None] = (1, 1, 1)
 
     def set_directional_light(self, direction, light_direction_noise, light_color):
         direction_norm = (
@@ -91,10 +87,6 @@ class Renderer:
 
     def set_background_color(self, color):
         self.background_color[None] = color
-
-    def set_floor(self, height, color):
-        self.floor_height[None] = height
-        self.floor_color[None] = color
 
     @ti.func
     def inside_grid(self, ipos):
@@ -147,18 +139,13 @@ class Renderer:
     @ti.func
     def ray_march(self, p, d):
         dist = inf
-        if d[1] < -eps:
-            dist = (self.floor_height[None] - p[1]) / d[1]
+
         return dist
 
     @ti.func
     def sdf_normal(self, p):
         return ti.Vector([0.0, 1.0, 0.0])  # up
-
-    @ti.func
-    def sdf_color(self, p):
-        return self.floor_color[None]
-
+    
     @ti.func
     def dda_voxel(self, eye_pos, d):
         for i in ti.static(range(3)):
@@ -258,7 +245,6 @@ class Renderer:
         if ray_march_dist < DIS_LIMIT and ray_march_dist < closest:
             closest = ray_march_dist
             normal = self.sdf_normal(pos + d * closest)
-            c = self.sdf_color(pos + d * closest)
             hit_found = 1
 
         # Highlight the selected voxel
