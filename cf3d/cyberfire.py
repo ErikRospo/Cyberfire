@@ -4,10 +4,9 @@ from typing import Dict
 
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
-from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
-                               QHBoxLayout, QLabel, QMainWindow, QPushButton,
-                               QRadioButton, QSlider, QVBoxLayout, QWidget)
+from PySide6.QtGui import QImage, QPixmap, QWheelEvent
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMainWindow,
+                               QPushButton, QSlider, QVBoxLayout, QWidget)
 
 from core import (FIRE_DEPTH, FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
                   get_palette_list, initialize_fire, render_scene, scene)
@@ -120,13 +119,8 @@ class FireWindow(QMainWindow):
         layout.addWidget(reset_btn)
         self.reset_btn = reset_btn
 
-        clear_fire_btn = QPushButton("Clear Fire")
-        clear_fire_btn.clicked.connect(self.clear_fire)
-        layout.addWidget(clear_fire_btn)
-        self.clear_fire_btn = clear_fire_btn
-
         # --- Frame Fire Button ---
-        frame_btn = QPushButton("Frame Fire")
+        frame_btn = QPushButton("Reset View")
         frame_btn.clicked.connect(self.frame_fire)
         layout.addWidget(frame_btn)
         self.frame_btn = frame_btn
@@ -160,16 +154,13 @@ class FireWindow(QMainWindow):
         self.is_dragging = False
         self.is_panning = False
         self.last_mouse_pos = None
-        self.render_passes=1
+        self.render_passes = 1
         for n in range(100):
             self.current_time += 0.05
             do_fire(self.current_time)
         self.update_frame()
         self.frame_fire()
         self.update_frame()
-
-    def clear_fire(self):
-        firePixels.fill(0)
 
     def frame_fire(self):
         # Recompute bbox

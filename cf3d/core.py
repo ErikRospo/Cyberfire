@@ -165,4 +165,3 @@ def render_scene(passes=1):
         scene.renderer.accumulate()
     img = scene.renderer.fetch_image()
     return img
-
