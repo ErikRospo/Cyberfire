@@ -178,42 +178,44 @@ class Renderer:
         normal = ti.Vector([0.0, 0.0, 0.0])
         c = ti.Vector([0.0, 0.0, 0.0])
         voxel_index = ti.Vector([0, 0, 0])
+        hit_found = 0
         if inter:
             near = max(0, near)
 
             pos = eye_pos + d * (near + 5 * eps)
 
             o = self.voxel_inv_dx * pos
-            ipos = int(ti.floor(o))
+            ipos = ti.floor(o).cast(ti.i32)
             dis = (ipos - o + 0.5 + rsign * 0.5) * rinv
             running = 1
             i = 0
             hit_pos = ti.Vector([0.0, 0.0, 0.0])
             while running:
-                last_sample = int(self.query_density(ipos))
                 if not self.inside_particle_grid(ipos):
                     running = 0
-
-                if last_sample != 0:  # Only treat nonzero material as a hit
-                    mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
-                    hit_distance = mini.max() * self.voxel_dx + near
-                    hit_pos = eye_pos + (hit_distance + 1e-3) * d
-                    voxel_index = self._to_voxel_index(hit_pos)
-                    c, hit_light = self.voxel_surface_color(hit_pos)
-                    running = 0
                 else:
-                    mm = ti.Vector([0, 0, 0])
-                    if dis[0] <= dis[1] and dis[0] < dis[2]:
-                        mm[0] = 1
-                    elif dis[1] <= dis[0] and dis[1] <= dis[2]:
-                        mm[1] = 1
+                    last_sample = self.voxel_material[ipos]
+                    if last_sample != 0:  # Only treat nonzero material as a hit
+                        mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
+                        hit_distance = mini.max() * self.voxel_dx + near
+                        hit_pos = eye_pos + (hit_distance + 1e-3) * d
+                        voxel_index = self._to_voxel_index(hit_pos)
+                        c, hit_light = self.voxel_surface_color(hit_pos)
+                        running = 0
+                        hit_found = 1
                     else:
-                        mm[2] = 1
-                    dis += mm * rsign * rinv
-                    ipos += mm * rsign
-                    normal = -mm * rsign
+                        mm = ti.Vector([0, 0, 0])
+                        if dis[0] <= dis[1] and dis[0] < dis[2]:
+                            mm[0] = 1
+                        elif dis[1] <= dis[0] and dis[1] <= dis[2]:
+                            mm[1] = 1
+                        else:
+                            mm[2] = 1
+                        dis += mm * rsign * rinv
+                        ipos += mm * rsign
+                        normal = -mm * rsign
                 i += 1
-        return hit_distance, normal, c, hit_light, voxel_index
+        return hit_distance, normal, c, hit_light, voxel_index, hit_found
 
     @ti.func
     def inside_particle_grid(self, ipos):
@@ -233,13 +235,15 @@ class Renderer:
         normal = ti.Vector([0.0, 0.0, 0.0])
         c = ti.Vector([0.0, 0.0, 0.0])
         hit_light = 0
-        closest, normal, c, hit_light, vx_idx = self.dda_voxel(pos, d)
+        hit_found = 0
+        closest, normal, c, hit_light, vx_idx, hit_found = self.dda_voxel(pos, d)
 
         ray_march_dist = self.ray_march(pos, d)
         if ray_march_dist < DIS_LIMIT and ray_march_dist < closest:
             closest = ray_march_dist
             normal = self.sdf_normal(pos + d * closest)
             c = self.sdf_color(pos + d * closest)
+            hit_found = 1
 
         # Highlight the selected voxel
         if self.cast_voxel_hit[None]:
@@ -249,37 +253,37 @@ class Renderer:
                 # For light sources, we actually invert the material to make it
                 # more obvious
                 hit_light = 1 - hit_light
-        return closest, normal, c, hit_light
+        return closest, normal, c, hit_light, hit_found
 
     @ti.kernel
-    def set_camera_pos(self, x: ti.f32, y: ti.f32, z: ti.f32):
+    def set_camera_pos(self, x: float, y: float, z: float):
         self.camera_pos[None] = ti.Vector([x, y, z])
 
     @ti.kernel
-    def set_up(self, x: ti.f32, y: ti.f32, z: ti.f32):
-        self.up[None] = ti.Vector([x, y, z]).normalized()
+    def set_up(self, x: float, y: float, z: float):
+        self.up[None] = ti.math.normalize(ti.Vector([x, y, z]))
 
     @ti.kernel
-    def set_look_at(self, x: ti.f32, y: ti.f32, z: ti.f32):
+    def set_look_at(self, x: float, y: float, z: float):
         self.look_at[None] = ti.Vector([x, y, z])
 
     @ti.kernel
-    def set_fov(self, fov: ti.f32):
+    def set_fov(self, fov: float):
         self.fov[None] = fov
 
     @ti.func
     def get_cast_dir(self, u, v):
         fov = self.fov[None]
-        d = (self.look_at[None] - self.camera_pos[None]).normalized()
+        d = ti.math.normalize(self.look_at[None] - self.camera_pos[None])
         fu = (
             2 * fov * (u + ti.random(ti.f32)) / self.image_res[1]
             - fov * self.aspect_ratio
             - 1e-5
         )
         fv = 2 * fov * (v + ti.random(ti.f32)) / self.image_res[1] - fov - 1e-5
-        du = d.cross(self.up[None]).normalized()
-        dv = du.cross(d).normalized()
-        d = (d + fu * du + fv * dv).normalized()
+        du = ti.math.normalize(ti.math.cross(d, self.up[None]))
+        dv = ti.math.normalize(ti.math.cross(du, d))
+        d = ti.math.normalize(d + fu * du + fv * dv)
         return d
 
     @ti.kernel
@@ -297,13 +301,14 @@ class Renderer:
             depth = 0
             hit_light = 0
             hit_background = 0
+            hit_found = 0
 
             # Tracing begin
             for bounce in range(MAX_RAY_DEPTH):
                 depth += 1
-                closest, normal, c, hit_light = self.next_hit(pos, d, t)
+                closest, normal, c, hit_light, hit_found = self.next_hit(pos, d, t)
                 hit_pos = pos + closest * d
-                if not hit_light and normal.norm() != 0 and closest < 1e8:
+                if hit_found and not hit_light and ti.math.length(normal) != 0 and closest < 1e8:
                     d = out_dir(normal)
                     pos = hit_pos + 1e-4 * d
                     throughput *= c
@@ -319,13 +324,11 @@ class Renderer:
                             )
                             * self.light_direction_noise[None]
                         )
-                        light_dir = (
-                            self.light_direction[None] + dir_noise
-                        ).normalized()
+                        light_dir = ti.math.normalize(self.light_direction[None] + dir_noise)
                         dot = light_dir.dot(normal)
                         if dot > 0:
                             hit_light_ = 0
-                            dist, _, _, hit_light_ = self.next_hit(pos, light_dir, t)
+                            dist, _, _, hit_light_, _ = self.next_hit(pos, light_dir, t)
                             if dist > DIS_LIMIT:
                                 # far enough to hit directional light
                                 contrib += throughput * self.light_color[None] * dot
@@ -351,7 +354,7 @@ class Renderer:
             self.color_buffer[u, v] += contrib
 
     @ti.kernel
-    def _render_to_image(self, samples: ti.i32):
+    def _render_to_image(self, samples: int):
         for i, j in self.color_buffer:
             u = 1.0 * i / self.image_res[0]
             v = 1.0 * j / self.image_res[1]
@@ -367,9 +370,9 @@ class Renderer:
                 0,
             )
 
-            for c in ti.static(range(3)):
-                self._rendered_image[i, j][c] = ti.sqrt(
-                    self.color_buffer[i, j][c] * darken * self.exposure / samples
+            for cidx in ti.static(range(3)):
+                self._rendered_image[i, j][cidx] = ti.sqrt(
+                    self.color_buffer[i, j][cidx] * darken * self.exposure / samples
                 )
 
     @ti.kernel

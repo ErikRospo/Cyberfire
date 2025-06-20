@@ -24,15 +24,16 @@ class FireWindow(QMainWindow):
         self.intensity_percent = 100
 
         # --- Camera rotation state ---
-        self.camera_yaw = 0.0  # left/right
-        self.camera_pitch = 0.0  # up/down
+        self.camera_yaw = -np.pi / 2  # Start facing into the scene
+        self.camera_pitch = -0.3      # Slightly above
+        self.camera_distance = 2.5
+        self.camera_target = np.array([FIRE_WIDTH / 2, FIRE_HEIGHT / 2, FIRE_DEPTH / 2], dtype=np.float32)
         self.last_mouse_pos = None
         self.is_dragging = False
-        self.camera_distance = 2.5  # for perspective
+        self.is_panning = False
         # --- Pan state ---
         self.camera_pan_x = 0.0
         self.camera_pan_y = 0.0
-        self.is_panning = False
         # --- FPS Counter ---
         self.last_fps_time = time.time()
         self.frame_count = 0
@@ -118,6 +119,12 @@ class FireWindow(QMainWindow):
         layout.addWidget(clear_fire_btn)
         self.clear_fire_btn = clear_fire_btn
 
+        # --- Frame Fire Button ---
+        frame_btn = QPushButton("Frame Fire")
+        frame_btn.clicked.connect(self.frame_fire)
+        layout.addWidget(frame_btn)
+        self.frame_btn = frame_btn
+
         layout.addStretch(1)
 
         # --- FPS Counter ---
@@ -137,12 +144,11 @@ class FireWindow(QMainWindow):
         initialize_fire()
         scene.renderer.recompute_bbox()
         self.palettes[self.palette_idx][1]()
-        # Reset view and associated parameters
+        # Reset camera
         self.camera_yaw = 0.0
         self.camera_pitch = 0.0
         self.camera_distance = 2.5
-        self.camera_pan_x = 0.0
-        self.camera_pan_y = 0.0
+        self.camera_target = np.array([FIRE_WIDTH / 2, FIRE_HEIGHT / 2, FIRE_DEPTH / 2], dtype=np.float32)
         self.is_dragging = False
         self.is_panning = False
         self.last_mouse_pos = None
@@ -150,6 +156,25 @@ class FireWindow(QMainWindow):
 
     def clear_fire(self):
         firePixels.fill(0)
+
+    def frame_fire(self):
+        # Recompute bbox
+        scene.renderer.recompute_bbox()
+        bbox_min = np.array(scene.renderer.bbox[0].to_numpy(), dtype=np.float32)
+        bbox_max = np.array(scene.renderer.bbox[1].to_numpy(), dtype=np.float32)
+        center = (bbox_min + bbox_max) / 2.0
+        size = bbox_max - bbox_min
+        # Set camera target to center
+        self.camera_target = center.astype(np.float32)
+        # Set camera distance to fit the bbox
+        max_extent = np.linalg.norm(size)
+        self.camera_distance = float(max_extent * 0.7 + 2.0)  # Add margin
+        # Set camera angles to a default isometric view
+        self.camera_yaw = -np.pi / 4
+        self.camera_pitch = -np.pi / 6
+        self.is_dragging = False
+        self.is_panning = False
+        self.last_mouse_pos = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -165,20 +190,28 @@ class FireWindow(QMainWindow):
 
     def mouseMoveEvent(self, event):
         pos = event.position() if hasattr(event, "position") else event.pos()
-        if self.is_dragging and self.last_mouse_pos is not None:
-            dx = pos.x() - self.last_mouse_pos.x()
-            dy = pos.y() - self.last_mouse_pos.y()
+        if self.last_mouse_pos is None:
+            self.last_mouse_pos = pos
+            return
+        dx = pos.x() - self.last_mouse_pos.x()
+        dy = pos.y() - self.last_mouse_pos.y()
+        if self.is_dragging:
+            # Orbit: update yaw/pitch
             self.camera_yaw += dx * 0.01
             self.camera_pitch += dy * 0.01
-            self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2, np.pi / 2)
-            self.last_mouse_pos = pos
-        elif self.is_panning and self.last_mouse_pos is not None:
-            dx = pos.x() - self.last_mouse_pos.x()
-            dy = pos.y() - self.last_mouse_pos.y()
-            # Pan speed factor can be tuned
-            self.camera_pan_x += dx * 0.01
-            self.camera_pan_y += dy * 0.01
-            self.last_mouse_pos = pos
+            self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2 + 0.05, np.pi / 2 - 0.05)
+        elif self.is_panning:
+            # Pan: move target in camera's right/up plane
+            cam_pos, look_at, up = self.compute_camera()
+            forward = look_at - cam_pos
+            forward /= np.linalg.norm(forward)
+            right = np.cross(forward, up)
+            right /= np.linalg.norm(right)
+            up_vec = np.cross(right, forward)
+            up_vec /= np.linalg.norm(up_vec)
+            pan_speed = self.camera_distance * 0.002
+            self.camera_target += right * (-dx * pan_speed) + up_vec * (dy * pan_speed)
+        self.last_mouse_pos = pos
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -189,37 +222,44 @@ class FireWindow(QMainWindow):
             self.last_mouse_pos = None
 
     def wheelEvent(self, event: QWheelEvent):
-        # Zoom in/out with mouse wheel
-        delta = event.angleDelta().y() / 120  # 120 per notch
-        self.camera_distance -= delta * 0.2
-        self.camera_distance = np.clip(self.camera_distance, 0.26, 10.0)
-        print(self.camera_distance)
+        delta = event.angleDelta().y() / 120
+        self.camera_distance *= np.exp(-delta * 0.1)
+        self.camera_distance = np.clip(self.camera_distance, 0.1, 100.0)
         event.accept()
+
+    def compute_camera(self):
+        # Spherical coordinates to cartesian
+        pitch = self.camera_pitch
+        yaw = self.camera_yaw
+        r = self.camera_distance
+        target = self.camera_target
+        # Camera position in world space
+        x = target[0] + r * np.cos(pitch) * np.cos(yaw)
+        y = target[1] + r * np.sin(pitch)
+        z = target[2] + r * np.cos(pitch) * np.sin(yaw)
+        cam_pos = np.array([x, y, z], dtype=np.float32)
+        # Calculate up vector based on pitch/yaw
+        # This keeps the up vector perpendicular to the view direction
+        up = np.array([0, 1, 0], dtype=np.float32)
+        view = target - cam_pos
+        view /= np.linalg.norm(view)
+        right = np.cross(up, view)
+        right /= np.linalg.norm(right)
+        up_corrected = np.cross(view, right)
+        up_corrected /= np.linalg.norm(up_corrected)
+        return cam_pos, target, up_corrected
 
     def update_frame(self):
         self.current_time += 0.05
         do_fire(self.current_time)
 
-        # Compute camera position and look-at based on yaw, pitch, pan, distance
-        yaw = self.camera_yaw
-        pitch = self.camera_pitch
-        distance = self.camera_distance
-
-        # Spherical coordinates to cartesian
-        cam_x = (
-            np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x 
-        )
-        cam_y = np.sin(pitch) * distance + self.camera_pan_y 
-        cam_z = np.cos(pitch) * np.cos(yaw) * distance 
-        up = (0, 1, 0)
-
-        scene.renderer.set_camera_pos(cam_x*FIRE_WIDTH, cam_y*FIRE_HEIGHT, cam_z*FIRE_DEPTH)
-        scene.renderer.set_look_at(self.camera_pan_x, self.camera_pan_y, 0)
+        cam_pos, look_at, up = self.compute_camera()
+        scene.renderer.set_camera_pos(*cam_pos)
+        scene.renderer.set_look_at(*look_at)
         scene.set_up(up)
 
         image = render_scene()
         np_img = image.to_numpy()
-        # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img = np.rot90(np_img * 256)
         np_img = np.astype(np_img, np.uint8).copy()
         h, w, ch = np_img.shape
