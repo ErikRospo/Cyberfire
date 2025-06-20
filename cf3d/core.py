@@ -151,7 +151,7 @@ def vertex_interp(p1, p2, valp1: int, valp2: int):
 
 # --- Rendering setup ---
 scene = Scene(exposure=10)
-scene.set_background_color((0, 0, 0))
+scene.set_background_color((0, 1, 0))
 
 
 def set_camera_pos(pos):
@@ -188,7 +188,7 @@ def update_scene_voxels_from_fire():
         if intensity > 0:
             color = colors[intensity]
             scene.renderer.set_voxel(
-                ti.Vector([x, y, z]), 1, ti.Vector([color[0]//256, color[1]//256, color[2]//256])
+                ti.Vector([x, y, z]), 2, ti.Vector([color[0]//256, color[1]//256, color[2]//256])
             )
         else:
             # Optionally clear voxel (set material to 0)
@@ -199,7 +199,8 @@ def render_scene():
     update_scene_voxels_from_fire()
     # Camera parameters must be set from the GUI before calling this function
     scene.renderer.reset_framebuffer()
-    scene.renderer.accumulate()
+    for n in range(10):
+        scene.renderer.accumulate()
     img = scene.renderer.fetch_image()
     return img
 

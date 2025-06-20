@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QRadioButton, QSlider, QVBoxLayout, QWidget)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
-                  get_palette_list, initialize_fire, render_scene)
+                  get_palette_list, initialize_fire, render_scene,scene)
 
 
 class FireWindow(QMainWindow):
@@ -188,7 +188,21 @@ class FireWindow(QMainWindow):
         self.current_time += 0.05
         do_fire(self.current_time)
 
-        # Pass pan offsets to rasterize
+        # Compute camera position and look-at based on yaw, pitch, pan, distance
+        yaw = self.camera_yaw
+        pitch = self.camera_pitch
+        distance = self.camera_distance
+
+        # Spherical coordinates to cartesian
+        cam_x = np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x
+        cam_y = np.sin(pitch) * distance + self.camera_pan_y
+        cam_z = np.cos(pitch) * np.cos(yaw) * distance
+        up = (0, 1, 0)
+
+        scene.renderer.set_camera_pos(cam_x, cam_y, cam_z)
+        scene.renderer.set_look_at(self.camera_pan_x,self.camera_pan_y,0)
+        scene.set_up(up)
+
         image = render_scene()
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
