@@ -32,11 +32,15 @@ class ModeSelector(QWidget):
 
             env = os.environ.copy()
             env["PYTHONPATH"] = str(Path.cwd() / "cf2d")
-            subprocess.Popen([sys.executable, "-m", "cf2d.cyberfire"], env=env)
+            subprocess.Popen([sys.executable, "-m", "cf2d.cyberfire2d"], env=env)
             self.close()
             return
         elif self.radio_3d.isChecked():
-            QMessageBox.warning(self, "Info", "3D mode not implemented yet.")
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(Path.cwd() / "cf3d")
+            subprocess.Popen([sys.executable, "-m", "cf3d.cyberfire3d"], env=env)
+            self.close()
+            return
 
 
 if __name__ == "__main__":
