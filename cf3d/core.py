@@ -15,12 +15,6 @@ firePixels = ti.field(dtype=ti.i32, shape=(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH))
 # Color palette
 colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_INTENSITY + 1))
 
-# Marching cubes output: triangles (max N triangles, 3 vertices, 3 coords)
-MAX_TRIANGLES = 100000
-triangles = ti.Vector.field(3, dtype=ti.f32, shape=(MAX_TRIANGLES, 3))
-triangle_colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_TRIANGLES,))
-num_triangles = ti.field(dtype=ti.i32, shape=())
-
 # --- Palette management ---
 
 _PALETTE_LIST = [
@@ -132,22 +126,6 @@ def do_fire(time: float):
 def initialize_fire():
     for x, z in ti.ndrange(FIRE_WIDTH, FIRE_DEPTH):
         firePixels[x, FIRE_HEIGHT - 1, z] = MAX_INTENSITY
-
-
-iso_level = MAX_INTENSITY * 0.2
-
-
-@ti.func
-def vertex_interp(p1, p2, valp1: int, valp2: int):
-    if abs(iso_level - valp1) < 1e-5:
-        return p1
-    if abs(iso_level - valp2) < 1e-5:
-        return p2
-    if abs(valp1 - valp2) < 1e-5:
-        return p1
-    mu = (iso_level - valp1) / (valp2 - valp1)
-    return p1 + mu * (p2 - p1)
-
 
 # --- Rendering setup ---
 scene = Scene(exposure=10)
