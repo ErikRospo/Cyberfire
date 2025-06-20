@@ -21,7 +21,6 @@ class FireWindow(QMainWindow):
         self.brush_changed = time.time() - 10
         self.mx = 0.5
         self.my = 0.5
-        self.intensity_percent = 100
         self.render_passes = 1  # New: number of render passes
 
         # --- Camera rotation state ---
@@ -63,9 +62,9 @@ class FireWindow(QMainWindow):
         for n in range(100):
             self.current_time += 0.05
             do_fire(self.current_time)
-
+        self.update_frame()
         self.frame_fire()
-
+        self.update_frame()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(16)
@@ -98,22 +97,6 @@ class FireWindow(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
-
-        # --- Intensity Slider ---
-        intensity_label = QLabel(f"Intensity: {self.intensity_percent}%", panel)
-        intensity_slider = QSlider(Qt.Orientation.Horizontal, panel)
-        intensity_slider.setMinimum(20)
-        intensity_slider.setMaximum(100)
-        intensity_slider.setValue(self.intensity_percent)
-        intensity_slider.setTickInterval(10)
-        intensity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        intensity_slider.valueChanged.connect(
-            lambda val: self.set_intensity(val, intensity_label)
-        )
-        layout.addWidget(intensity_label)
-        layout.addWidget(intensity_slider)
-        self.intensity_slider = intensity_slider
-        self.intensity_label = intensity_label
 
         # --- Render Passes Slider ---
         passes_label = QLabel(f"Render Passes: {self.render_passes}", panel)
@@ -157,11 +140,6 @@ class FireWindow(QMainWindow):
         panel.setLayout(layout)
         return panel
 
-    def set_intensity(self, val: int, label=None):
-        self.intensity_percent = val
-        if label is not None:
-            label.setText(f"Intensity: {val}%")
-
     def set_render_passes(self, val: int, label=None):
         self.render_passes = val
         if label is not None:
@@ -197,7 +175,7 @@ class FireWindow(QMainWindow):
         self.camera_target = center.astype(np.float32)
         # Set camera distance to fit the bbox
         max_extent = np.linalg.norm(size)
-        self.camera_distance = float(max_extent * 0.7 + 2.0)  # Add margin
+        self.camera_distance = float(max_extent * 0.7 + 2.5)  # Add margin
         # Set camera angles to a default isometric view
         self.camera_yaw = -np.pi / 4
         self.camera_pitch = -np.pi / 6
