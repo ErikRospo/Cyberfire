@@ -4,8 +4,9 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QApplication,  QPushButton, QSpinBox,
-                               QRadioButton, QVBoxLayout, QWidget, QHBoxLayout, QLabel, QLineEdit)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit,
+                               QPushButton, QRadioButton, QSpinBox,
+                               QVBoxLayout, QWidget)
 
 
 class ModeSelector(QWidget):
@@ -49,8 +50,12 @@ class ModeSelector(QWidget):
         depth_layout.addWidget(self.depth_input)
         layout.addLayout(depth_layout)
         self.depth_input.setEnabled(False)
-        self.radio_2d.toggled.connect(lambda checked: self.depth_input.setEnabled(not checked))
-        self.radio_3d.toggled.connect(lambda checked: self.depth_input.setEnabled(checked))
+        self.radio_2d.toggled.connect(
+            lambda checked: self.depth_input.setEnabled(not checked)
+        )
+        self.radio_3d.toggled.connect(
+            lambda checked: self.depth_input.setEnabled(checked)
+        )
 
         self.launch_btn = QPushButton("Launch")
         self.launch_btn.clicked.connect(self.launch)
