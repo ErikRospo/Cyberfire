@@ -8,6 +8,7 @@ from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QHBoxLayout, QLabel, QMainWindow, QPushButton,
                                QRadioButton, QSlider, QVBoxLayout, QWidget)
+import taichi
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
                   get_palette_list, initialize_fire, render_scene, scene)
@@ -206,9 +207,9 @@ class FireWindow(QMainWindow):
         image = render_scene()
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
-        np_img = np.rot90(np_img).copy()
+        np_img = np.rot90(np_img*256)
+        np_img=np.astype(np_img,np.uint8).copy()
         h, w, ch = np_img.shape
-
         bytes_per_line = ch * w
         qimg = QImage(np_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
         self.label.setPixmap(QPixmap.fromImage(qimg))
