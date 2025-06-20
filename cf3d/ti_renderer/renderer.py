@@ -15,7 +15,7 @@ class Renderer:
     def __init__(self, dx, image_res, up, voxel_edges, exposure=3):
         self.image_res = image_res
         self.aspect_ratio = image_res[0] / image_res[1]
-        self.vignette_strength = 0.9
+        self.vignette_strength = 0
         self.vignette_radius = 0.0
         self.vignette_center = [0.5, 0.5]
         self.current_spp = 0
@@ -431,7 +431,7 @@ class Renderer:
     @ti.kernel
     def read_fire_pixels(self, firePixels:ti.template(), colors:ti.template()):
         # Copy firePixels and color palette into renderer's voxel fields
-        for x, y, z in ti.ndrange(self.voxel_grid_res, self.voxel_grid_res, self.voxel_grid_res):
+        for x, y, z in ti.ndrange(self.voxel_grid_res, self.voxel_grid_res-1, self.voxel_grid_res):
             intensity = firePixels[x, y, z]
             if intensity > 0:
                 color = colors[intensity]
