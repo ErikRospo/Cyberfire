@@ -9,9 +9,8 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QHBoxLayout, QLabel, QMainWindow, QPushButton,
                                QRadioButton, QSlider, QVBoxLayout, QWidget)
 
-from core import (FIRE_HEIGHT, FIRE_WIDTH, clear_image, do_fire, firePixels,
-                  get_palette_list, image, initialize_fire, marching_cubes,
-                  num_triangles, rasterize)
+from core import (FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
+                  get_palette_list, initialize_fire,render_scene)
 
 
 class FireWindow(QMainWindow):
@@ -189,10 +188,8 @@ class FireWindow(QMainWindow):
         self.current_time += 0.05
         do_fire(self.current_time)
 
-        marching_cubes()
-        clear_image()
         # Pass pan offsets to rasterize
-        rasterize(self.camera_yaw, self.camera_pitch, self.camera_distance, self.camera_pan_x, self.camera_pan_y)
+        image=render_scene()
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img = np.rot90(np_img).copy()

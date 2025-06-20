@@ -1,6 +1,7 @@
 import numpy as np
 import taichi as ti
 
+from ti_renderer.scene import Scene
 from constants import (ADD_MULT, DECAY_MULT, FIRE_DEPTH, FIRE_HEIGHT,
                        FIRE_WIDTH, MAX_INTENSITY)
 from mc_constants import edge_table_np, tri_table_np
@@ -12,8 +13,6 @@ ti.init(arch=ti.gpu)
 
 # 3D Fire simulation field: (width, height, depth)
 firePixels = ti.field(dtype=ti.i32, shape=(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH))
-# 2D Image: (width, height, 3)
-image = ti.field(dtype=ti.u8, shape=(FIRE_WIDTH, FIRE_HEIGHT, 3))
 # Color palette
 colors = ti.Vector.field(3, dtype=ti.u8, shape=(MAX_INTENSITY + 1))
 
@@ -151,156 +150,50 @@ def vertex_interp(p1, p2, valp1:int, valp2:int):
     return p1 + mu * (p2 - p1)
 
 
-edge_table = ti.field(dtype=ti.i32, shape=256)
-tri_table = ti.field(dtype=ti.i32, shape=(256, 16))
+# --- Rendering setup ---
+scene = Scene(exposure=10)
+scene.set_background_color((0, 0, 0))
+
+def set_camera_pos(pos):
+    scene.set_camera_pos(pos)
+
+def set_look_at(look_at):
+    scene.set_look_at(look_at)
+
+def set_up(up):
+    scene.set_up(up)
+
+def set_fov(fov):
+    scene.set_fov(fov)
+
+def set_directional_light(direction, direction_noise, color):
+    scene.set_directional_light(direction, direction_noise, color)
+
+def set_background_color(color):
+    scene.set_background_color(color)
 
 
-edge_table_arr = np.array(edge_table_np, dtype=np.int32)
-tri_table_arr = np.full((256, 16), -1, dtype=np.int32)
-for i, row in enumerate(tri_table_np):
-    for j, val in enumerate(row):
-        if j < 16:
-            tri_table_arr[i, j] = val
-
-edge_table.from_numpy(edge_table_arr)
-tri_table.from_numpy(tri_table_arr)
-
+# Update scene voxels from firePixels
 @ti.kernel
-def marching_cubes():
-    num_triangles[None] = 0
-    for x, y, z in ti.ndrange(FIRE_WIDTH - 1, FIRE_HEIGHT - 1, FIRE_DEPTH - 1):
-        # Gather cube corner values
-        cube = ti.Vector([0.0] * 8)
-        for i in ti.static(range(8)):
-            dx = i & 1
-            dy = (i >> 1) & 1
-            dz = (i >> 2) & 1
-            cube[i] = firePixels[x + dx, y + dy, z + dz]
-
-        # Determine cube index
-        cube_index = 0
-        for i in ti.static(range(8)):
-            if cube[i] > iso_level:
-                cube_index |= 1 << i
-
-        # Skip empty cubes
-        if edge_table[cube_index] == 0:
-            continue
-
-        # Interpolate vertices on cube edges
-        vertlist = [ti.Vector([0.0, 0.0, 0.0]) for _ in range(12)]
-        # Cube corner positions
-        p = [
-            ti.Vector([x + 0, y + 0, z + 0]),
-            ti.Vector([x + 1, y + 0, z + 0]),
-            ti.Vector([x + 1, y + 1, z + 0]),
-            ti.Vector([x + 0, y + 1, z + 0]),
-            ti.Vector([x + 0, y + 0, z + 1]),
-            ti.Vector([x + 1, y + 0, z + 1]),
-            ti.Vector([x + 1, y + 1, z + 1]),
-            ti.Vector([x + 0, y + 1, z + 1]),
-        ]
-        # Edge to corner indices
-        edge_corners = [
-            (0, 1), (1, 2), (2, 3), (3, 0),
-            (4, 5), (5, 6), (6, 7), (7, 4),
-            (0, 4), (1, 5), (2, 6), (3, 7)
-        ]
-        for i in ti.static(range(12)):
-            if (edge_table[cube_index] & (1 << i)):
-                a0 = int(edge_corners[i][0])
-                b0= int(edge_corners[i][1])
-                
-                vertlist[i] = vertex_interp(
-                    p[a0], p[b0], cube[a0], cube[b0]
-                )
-
-        # Output triangles
-        for t in ti.static(range(5)):  # up to 5 triangles per cube
-            if tri_table[cube_index, 3 * t] == -1:
-                break
-            if num_triangles[None] >= MAX_TRIANGLES:
-                break
-            for v in ti.static(range(3)):
-                edge_idx = int(tri_table[cube_index, 3 * t + v])
-                triangles[num_triangles[None], v] = vertlist[edge_idx]
-            # Use average intensity for color
-            avg_intensity = 0.0
-            for i in ti.static(range(8)):
-                avg_intensity += cube[i]
-            avg_intensity = avg_intensity / 8.0
-            color_idx = ti.min(MAX_INTENSITY, ti.max(0, int(avg_intensity)))
-            triangle_colors[num_triangles[None]] = colors[color_idx]
-            num_triangles[None] += 1
+def update_scene_voxels_from_fire():
+    for x, y, z in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH):
+        intensity = firePixels[x, y, z]
+        if intensity > 0:
+            color = colors[intensity]
+            # Set voxel as MAT_LAMBERTIAN (1), color normalized to [0,1]
+            scene.renderer.set_voxel(ti.Vector([x, y, z]), 1, ti.Vector([color[0], color[1], color[2]]))
+        else:
+            # Optionally clear voxel (set material to 0)
+            scene.renderer.set_voxel(ti.Vector([x, y, z]), 0, ti.Vector([0, 0, 0]))
 
 
-# --- Rasterization ---
-@ti.kernel
-def clear_image():
-    for x, y in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT):
-        for c in ti.static(range(3)):
-            image[x, y, c] = 0
-
-proj = ti.field(dtype=ti.i32, shape=(2, 3))
-
-@ti.kernel
-def rasterize(yaw: float, pitch: float, distance: float, pan_x: float, pan_y: float):
-    # Camera parameters
-    cx = FIRE_WIDTH / 2 - pan_x * FIRE_WIDTH
-    cy = FIRE_HEIGHT / 2 - pan_y * FIRE_HEIGHT
-    cz = FIRE_DEPTH / 2
-    fov = 1.2  # radians, for perspective
-    aspect = FIRE_WIDTH / FIRE_HEIGHT
-    for i in range(MAX_TRIANGLES):
-        if i < num_triangles[None]:
-            v0 = triangles[i, 0]
-            v1 = triangles[i, 1]
-            v2 = triangles[i, 2]
-            verts = ti.Matrix.rows([v0, v1, v2])
-            for idx in ti.static(range(3)):
-                # Center
-                x = verts[idx, 0] - cx
-                y = verts[idx, 1] - cy
-                z = verts[idx, 2] - cz
-                # Rotate around Y (yaw)
-                xz = x * ti.cos(yaw) - z * ti.sin(yaw)
-                zz = x * ti.sin(yaw) + z * ti.cos(yaw)
-                x, z = xz, zz
-                # Rotate around X (pitch)
-                yz = y * ti.cos(pitch) - z * ti.sin(pitch)
-                zz = y * ti.sin(pitch) + z * ti.cos(pitch)
-                y, z = yz, zz
-                # Move camera back
-                z += distance * max(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH)
-                # Perspective projection
-                px = x / (z * ti.tan(fov / 2) + 1e-5) * aspect
-                py = y / (z * ti.tan(fov / 2) + 1e-5)
-                # Map to image coordinates
-                sx = int((px + 0.5) * FIRE_WIDTH)
-                sy = int((py + 0.5) * FIRE_HEIGHT)
-                proj[0, idx] = sx
-                proj[1, idx] = sy
-            x0, y0 = proj[0, 0], proj[1, 0]
-            x1, y1 = proj[0, 1], proj[1, 1]
-            x2, y2 = proj[0, 2], proj[1, 2]
-            # Draw triangle bounding box
-            xmin = max(min(x0, x1, x2), 0)
-            xmax = min(max(x0, x1, x2), FIRE_WIDTH - 1)
-            ymin = max(min(y0, y1, y2), 0)
-            ymax = min(max(y0, y1, y2), FIRE_HEIGHT - 1)
-            for x in range(xmin, xmax + 1):
-                for y in range(ymin, ymax + 1):
-                    # Barycentric coordinates
-                    denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
-                    if denom == 0:
-                        continue
-                    w0 = ((y1 - y2) * (x - x2) + (x2 - x1) * (y - y2)) / denom
-                    w1 = ((y2 - y0) * (x - x2) + (x0 - x2) * (y - y2)) / denom
-                    w2 = 1 - w0 - w1
-                    if w0 >= 0 and w1 >= 0 and w2 >= 0:
-                        # Flip the y-axis for correct image orientation
-                        for c in ti.static(range(3)):
-                            image[x, FIRE_HEIGHT - 1 - y, c] = triangle_colors[i][c]
+def render_scene():
+    update_scene_voxels_from_fire()
+    # Camera parameters must be set from the GUI before calling this function
+    scene.renderer.reset_framebuffer()
+    scene.renderer.accumulate()
+    img = scene.renderer.fetch_image()
+    return img
 
 
 # --- Utility kernels for fire manipulation (3D) ---
