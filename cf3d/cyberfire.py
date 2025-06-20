@@ -24,6 +24,13 @@ class FireWindow(QMainWindow):
         self.my = 0.5
         self.intensity_percent = 100
 
+        # --- Camera rotation state ---
+        self.camera_yaw = 0.0  # left/right
+        self.camera_pitch = 0.0  # up/down
+        self.last_mouse_pos = None
+        self.is_dragging = False
+        self.camera_distance = 2.5  # for perspective
+
         # --- FPS Counter ---
         self.last_fps_time = time.time()
         self.frame_count = 0
@@ -55,6 +62,8 @@ class FireWindow(QMainWindow):
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
         self.label.mouseMoveEvent = self.mouseMoveEvent
+        self.label.mousePressEvent = self.mousePressEvent
+        self.label.mouseReleaseEvent = self.mouseReleaseEvent
 
     @property
     def imx(self):
@@ -128,14 +137,36 @@ class FireWindow(QMainWindow):
     def clear_fire(self):
         firePixels.fill(0)
 
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.is_dragging = True
+            self.last_mouse_pos = (
+                event.position() if hasattr(event, "position") else event.pos()
+            )
+
+    def mouseMoveEvent(self, event):
+        if self.is_dragging and self.last_mouse_pos is not None:
+            pos = event.position() if hasattr(event, "position") else event.pos()
+            dx = pos.x() - self.last_mouse_pos.x()
+            dy = pos.y() - self.last_mouse_pos.y()
+            self.camera_yaw += dx * 0.01
+            self.camera_pitch += dy * 0.01
+            self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2, np.pi / 2)
+            self.last_mouse_pos = pos
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.is_dragging = False
+            self.last_mouse_pos = None
+
     def update_frame(self):
         self.current_time += 0.05
         do_fire(self.current_time)
 
         marching_cubes()
         clear_image()
-        rasterize()
-        print(num_triangles)
+        # TODO: rasterize kernel must accept camera_yaw, camera_pitch, camera_distance
+        rasterize(self.camera_yaw, self.camera_pitch, self.camera_distance)
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img = np.rot90(np_img).copy()
