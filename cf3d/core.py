@@ -127,6 +127,7 @@ def initialize_fire():
     for x, z in ti.ndrange(FIRE_WIDTH, FIRE_DEPTH):
         firePixels[x, FIRE_HEIGHT - 1, z] = MAX_INTENSITY
 
+
 # --- Rendering setup ---
 scene = Scene(exposure=10)
 scene.set_background_color((0, 1, 0))
@@ -161,12 +162,14 @@ def set_background_color(color):
 def update_scene_voxels_from_fire():
     for x, y, z in ti.ndrange(FIRE_WIDTH, FIRE_HEIGHT, FIRE_DEPTH):
         intensity = firePixels[x, y, z]
-        intensity=ti.math.clamp(intensity,0,MAX_INTENSITY-1)
+        intensity = ti.math.clamp(intensity, 0, MAX_INTENSITY - 1)
 
         if intensity > 0:
             color = colors[intensity]
             scene.renderer.set_voxel(
-                ti.Vector([x, y, z]), 2, ti.Vector([color[0]//256, color[1]//256, color[2]//256])
+                ti.Vector([x, y, z]),
+                2,
+                ti.Vector([color[0] // 256, color[1] // 256, color[2] // 256]),
             )
         else:
             # Optionally clear voxel (set material to 0)
