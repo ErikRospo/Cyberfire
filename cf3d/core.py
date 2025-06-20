@@ -131,7 +131,7 @@ def initialize_fire():
 
 # --- Rendering setup ---
 scene = Scene(exposure=1)
-scene.set_background_color((0, 1, 0))
+scene.set_background_color((1,252/256, 234/256))
 
 
 def set_camera_pos(pos):
@@ -170,7 +170,7 @@ def update_scene_voxels_from_fire():
             scene.renderer.set_voxel(
                 ti.Vector([x, y, z]),
                 2,
-                ti.Vector([color[0] // 256, color[1] // 256, color[2] // 256]),
+                ti.Vector([color[0], color[1], color[2]]),
             )
         else:
             # Optionally clear voxel (set material to 0)

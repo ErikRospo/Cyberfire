@@ -29,7 +29,7 @@ class FireWindow(QMainWindow):
         self.camera_pitch = 0.0  # up/down
         self.last_mouse_pos = None
         self.is_dragging = False
-        self.camera_distance = 2.5  # for perspective
+        self.camera_distance = 500  # for perspective
         # --- Pan state ---
         self.camera_pan_x = 0.0
         self.camera_pan_y = 0.0
@@ -182,7 +182,7 @@ class FireWindow(QMainWindow):
         # Zoom in/out with mouse wheel
         delta = event.angleDelta().y() / 120  # 120 per notch
         self.camera_distance -= delta * 0.1
-        self.camera_distance = np.clip(self.camera_distance, 1.0, 10.0)
+        self.camera_distance = np.clip(self.camera_distance, 1.0, 600.0)
         event.accept()
 
     def update_frame(self):
