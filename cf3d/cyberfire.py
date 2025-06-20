@@ -201,16 +201,15 @@ class FireWindow(QMainWindow):
             self.camera_pitch -= dy * 0.01
             self.camera_pitch = np.clip(self.camera_pitch, -np.pi / 2 + 0.05, np.pi / 2 - 0.05)
         elif self.is_panning:
-            # Pan: move target in camera's right/up plane
+            # Pan: move target in camera's right/world up plane
             cam_pos, look_at, up = self.compute_camera()
             forward = look_at - cam_pos
             forward /= np.linalg.norm(forward)
-            right = np.cross(forward, up)
+            right = np.cross(forward, np.array([0, 1, 0], dtype=np.float32))
             right /= np.linalg.norm(right)
-            up_vec = np.cross(right, forward)
-            up_vec /= np.linalg.norm(up_vec)
+            up_vec = np.array([0, 1, 0], dtype=np.float32)
             pan_speed = self.camera_distance * 0.002
-            self.camera_target += right * (dx * pan_speed) + up_vec * (-dy * pan_speed)
+            self.camera_target -= right * (dx * pan_speed) + up_vec * (-dy * pan_speed)
         self.last_mouse_pos = pos
 
     def mouseReleaseEvent(self, event):
