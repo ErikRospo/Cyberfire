@@ -435,7 +435,9 @@ class Renderer:
             intensity = firePixels[x, y, z]
             if intensity > 0:
                 color = colors[intensity]
-                self.voxel_material[x, y, z] = 1
+                # Set material to 2 if intensity > 230, else 1
+                mat = 2 if intensity > 230 else 1
+                self.voxel_material[x, y, z] = mat
                 self.voxel_color[x, y, z] = color
                 # Set alpha proportional to intensity (max=1.0, min=0.0)
                 self._voxel_alpha[x, y, z] = ti.cast(intensity, ti.f32)/MAX_INTENSITY

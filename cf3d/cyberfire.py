@@ -209,7 +209,7 @@ class FireWindow(QMainWindow):
             right /= np.linalg.norm(right)
             up_vec = np.array([0, 1, 0], dtype=np.float32)
             pan_speed = self.camera_distance * 0.002
-            self.camera_target -= right * (dx * pan_speed) + up_vec * (-dy * pan_speed)
+            self.camera_target -= right * (dx * pan_speed) + up_vec * (dy * pan_speed)
         self.last_mouse_pos = pos
 
     def mouseReleaseEvent(self, event):
