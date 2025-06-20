@@ -136,8 +136,17 @@ class FireWindow(QMainWindow):
         firePixels.fill(0)
         initialize_fire()
         scene.renderer.recompute_bbox()
-
         self.palettes[self.palette_idx][1]()
+        # Reset view and associated parameters
+        self.camera_yaw = 0.0
+        self.camera_pitch = 0.0
+        self.camera_distance = 2.5
+        self.camera_pan_x = 0.0
+        self.camera_pan_y = 0.0
+        self.is_dragging = False
+        self.is_panning = False
+        self.last_mouse_pos = None
+
 
     def clear_fire(self):
         firePixels.fill(0)
@@ -193,19 +202,19 @@ class FireWindow(QMainWindow):
 
         # Compute camera position and look-at based on yaw, pitch, pan, distance
         yaw = self.camera_yaw
-        pitch = self.camera_pitch+self.current_time
+        pitch = self.camera_pitch
         distance = self.camera_distance
 
         # Spherical coordinates to cartesian
         cam_x = (
-            np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x + distance*FIRE_WIDTH // 2
+            np.cos(pitch) * np.sin(yaw) * distance + self.camera_pan_x 
         )
-        cam_y = np.sin(pitch) * distance + self.camera_pan_y + distance*FIRE_HEIGHT // 2
-        cam_z = np.cos(pitch) * np.cos(yaw) * distance + distance*FIRE_DEPTH // 2
+        cam_y = np.sin(pitch) * distance + self.camera_pan_y + distance
+        cam_z = np.cos(pitch) * np.cos(yaw) * distance + distance
         up = (0, 1, 0)
 
-        scene.renderer.set_camera_pos(cam_x, cam_y, cam_z)
-        scene.renderer.set_look_at(self.camera_pan_x, self.camera_pan_y, 0)
+        scene.renderer.set_camera_pos(cam_x*FIRE_WIDTH, cam_y*FIRE_HEIGHT, cam_z*FIRE_DEPTH)
+        scene.renderer.set_look_at(self.camera_pan_x*FIRE_WIDTH, self.camera_pan_y*FIRE_HEIGHT, 0)
         scene.set_up(up)
 
         image = render_scene()
