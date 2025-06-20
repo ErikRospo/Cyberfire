@@ -1,6 +1,7 @@
 import math
-import taichi as ti
+
 import numpy as np
+import taichi as ti
 
 eps = 1e-4
 inf = 1e10
@@ -61,7 +62,11 @@ def np_rotate_matrix(axis, theta):
     b, c, d = -axis * math.sin(theta / 2.0)
     aa, bb, cc, dd = a * a, b * b, c * c, d * d
     bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
-    return np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac), 0],
-                     [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab), 0],
-                     [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc, 0],
-                     [0, 0, 0, 1]])
+    return np.array(
+        [
+            [aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac), 0],
+            [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab), 0],
+            [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc, 0],
+            [0, 0, 0, 1],
+        ]
+    )

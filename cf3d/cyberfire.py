@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox,
                                QRadioButton, QSlider, QVBoxLayout, QWidget)
 
 from core import (FIRE_HEIGHT, FIRE_WIDTH, do_fire, firePixels,
-                  get_palette_list, initialize_fire,render_scene)
+                  get_palette_list, initialize_fire, render_scene)
 
 
 class FireWindow(QMainWindow):
@@ -189,7 +189,7 @@ class FireWindow(QMainWindow):
         do_fire(self.current_time)
 
         # Pass pan offsets to rasterize
-        image=render_scene()
+        image = render_scene()
         np_img = image.to_numpy()
         # This copy is annoying, as it likely introduces a lot of unneeded copies, but this needs to be an actual array and not a view for .data
         np_img = np.rot90(np_img).copy()

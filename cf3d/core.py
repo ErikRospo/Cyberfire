@@ -1,13 +1,12 @@
 import numpy as np
 import taichi as ti
 
-from ti_renderer.scene import Scene
 from constants import (ADD_MULT, DECAY_MULT, FIRE_DEPTH, FIRE_HEIGHT,
                        FIRE_WIDTH, MAX_INTENSITY)
-from mc_constants import edge_table_np, tri_table_np
 from palettes import (palette_cold_fire, palette_cyber, palette_electric,
                       palette_fire, palette_gray, palette_sunset,
                       palette_toxic)
+from ti_renderer.scene import Scene
 
 ti.init(arch=ti.gpu)
 
@@ -135,11 +134,11 @@ def initialize_fire():
         firePixels[x, FIRE_HEIGHT - 1, z] = MAX_INTENSITY
 
 
-iso_level = MAX_INTENSITY*0.2
+iso_level = MAX_INTENSITY * 0.2
 
 
 @ti.func
-def vertex_interp(p1, p2, valp1:int, valp2:int):
+def vertex_interp(p1, p2, valp1: int, valp2: int):
     if abs(iso_level - valp1) < 1e-5:
         return p1
     if abs(iso_level - valp2) < 1e-5:
@@ -154,20 +153,26 @@ def vertex_interp(p1, p2, valp1:int, valp2:int):
 scene = Scene(exposure=10)
 scene.set_background_color((0, 0, 0))
 
+
 def set_camera_pos(pos):
     scene.set_camera_pos(pos)
+
 
 def set_look_at(look_at):
     scene.set_look_at(look_at)
 
+
 def set_up(up):
     scene.set_up(up)
+
 
 def set_fov(fov):
     scene.set_fov(fov)
 
+
 def set_directional_light(direction, direction_noise, color):
     scene.set_directional_light(direction, direction_noise, color)
+
 
 def set_background_color(color):
     scene.set_background_color(color)
@@ -181,7 +186,9 @@ def update_scene_voxels_from_fire():
         if intensity > 0:
             color = colors[intensity]
             # Set voxel as MAT_LAMBERTIAN (1), color normalized to [0,1]
-            scene.renderer.set_voxel(ti.Vector([x, y, z]), 1, ti.Vector([color[0], color[1], color[2]]))
+            scene.renderer.set_voxel(
+                ti.Vector([x, y, z]), 1, ti.Vector([color[0], color[1], color[2]])
+            )
         else:
             # Optionally clear voxel (set material to 0)
             scene.renderer.set_voxel(ti.Vector([x, y, z]), 0, ti.Vector([0, 0, 0]))

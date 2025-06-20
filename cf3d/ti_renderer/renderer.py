@@ -1,6 +1,6 @@
 import taichi as ti
 
-from ti_renderer.math_utils import (eps, inf, out_dir, ray_aabb_intersection)
+from ti_renderer.math_utils import eps, inf, out_dir, ray_aabb_intersection
 
 MAX_RAY_DEPTH = 4
 use_directional_light = True
@@ -50,10 +50,9 @@ class Renderer:
         voxel_grid_offset = [-self.voxel_grid_res // 2 for _ in range(3)]
 
         ti.root.dense(ti.ij, image_res).place(self.color_buffer)
-        ti.root.dense(ti.ijk,
-                      self.voxel_grid_res).place(self.voxel_color,
-                                                 self.voxel_material,
-                                                 offset=voxel_grid_offset)
+        ti.root.dense(ti.ijk, self.voxel_grid_res).place(
+            self.voxel_color, self.voxel_material, offset=voxel_grid_offset
+        )
 
         self._rendered_image = ti.Vector.field(3, float, image_res)
         self.set_up(*up)
@@ -62,13 +61,15 @@ class Renderer:
         self.floor_height[None] = 0
         self.floor_color[None] = (1, 1, 1)
 
-    def set_directional_light(self, direction, light_direction_noise,
-                              light_color):
-        direction_norm = (direction[0]**2 + direction[1]**2 +
-                          direction[2]**2)**0.5
-        self.light_direction[None] = (direction[0] / direction_norm,
-                                      direction[1] / direction_norm,
-                                      direction[2] / direction_norm)
+    def set_directional_light(self, direction, light_direction_noise, light_color):
+        direction_norm = (
+            direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2
+        ) ** 0.5
+        self.light_direction[None] = (
+            direction[0] / direction_norm,
+            direction[1] / direction_norm,
+            direction[2] / direction_norm,
+        )
         self.light_direction_noise[None] = light_direction_noise
         self.light_color[None] = light_color
 
@@ -93,8 +94,10 @@ class Renderer:
 
     @ti.func
     def inside_grid(self, ipos):
-        return ipos.min() >= -self.voxel_grid_res // 2 and ipos.max(
-        ) < self.voxel_grid_res // 2
+        return (
+            ipos.min() >= -self.voxel_grid_res // 2
+            and ipos.max() < self.voxel_grid_res // 2
+        )
 
     @ti.func
     def query_density(self, ipos):
@@ -167,8 +170,7 @@ class Renderer:
 
         bbox_min = self.bbox[0]
         bbox_max = self.bbox[1]
-        inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos,
-                                                 d)
+        inter, near, far = ray_aabb_intersection(bbox_min, bbox_max, eye_pos, d)
         hit_distance = inf
         hit_light = 0
         normal = ti.Vector([0.0, 0.0, 0.0])
@@ -191,8 +193,7 @@ class Renderer:
                     running = 0
 
                 if last_sample:
-                    mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) -
-                            rsign * 0.5) * rinv
+                    mini = (ipos - o + ti.Vector([0.5, 0.5, 0.5]) - rsign * 0.5) * rinv
                     hit_distance = mini.max() * self.voxel_dx + near
                     hit_pos = eye_pos + (hit_distance + 1e-3) * d
                     voxel_index = self._to_voxel_index(hit_pos)
@@ -215,9 +216,14 @@ class Renderer:
     @ti.func
     def inside_particle_grid(self, ipos):
         pos = ipos * self.voxel_dx
-        return self.bbox[0][0] <= pos[0] and pos[0] < self.bbox[1][
-            0] and self.bbox[0][1] <= pos[1] and pos[1] < self.bbox[1][
-                1] and self.bbox[0][2] <= pos[2] and pos[2] < self.bbox[1][2]
+        return (
+            self.bbox[0][0] <= pos[0]
+            and pos[0] < self.bbox[1][0]
+            and self.bbox[0][1] <= pos[1]
+            and pos[1] < self.bbox[1][1]
+            and self.bbox[0][2] <= pos[2]
+            and pos[2] < self.bbox[1][2]
+        )
 
     @ti.func
     def next_hit(self, pos, d, t):
@@ -263,8 +269,11 @@ class Renderer:
     def get_cast_dir(self, u, v):
         fov = self.fov[None]
         d = (self.look_at[None] - self.camera_pos[None]).normalized()
-        fu = (2 * fov * (u + ti.random(ti.f32)) / self.image_res[1] -
-              fov * self.aspect_ratio - 1e-5)
+        fu = (
+            2 * fov * (u + ti.random(ti.f32)) / self.image_res[1]
+            - fov * self.aspect_ratio
+            - 1e-5
+        )
         fv = 2 * fov * (v + ti.random(ti.f32)) / self.image_res[1] - fov - 1e-5
         du = d.cross(self.up[None]).normalized()
         dv = du.cross(d).normalized()
@@ -298,22 +307,26 @@ class Renderer:
                     throughput *= c
 
                     if ti.static(use_directional_light):
-                        dir_noise = ti.Vector([
-                            ti.random() - 0.5,
-                            ti.random() - 0.5,
-                            ti.random() - 0.5
-                        ]) * self.light_direction_noise[None]
-                        light_dir = (self.light_direction[None] +
-                                     dir_noise).normalized()
+                        dir_noise = (
+                            ti.Vector(
+                                [
+                                    ti.random() - 0.5,
+                                    ti.random() - 0.5,
+                                    ti.random() - 0.5,
+                                ]
+                            )
+                            * self.light_direction_noise[None]
+                        )
+                        light_dir = (
+                            self.light_direction[None] + dir_noise
+                        ).normalized()
                         dot = light_dir.dot(normal)
                         if dot > 0:
                             hit_light_ = 0
-                            dist, _, _, hit_light_ = self.next_hit(
-                                pos, light_dir, t)
+                            dist, _, _, hit_light_ = self.next_hit(pos, light_dir, t)
                             if dist > DIS_LIMIT:
                                 # far enough to hit directional light
-                                contrib += throughput * \
-                                    self.light_color[None] * dot
+                                contrib += throughput * self.light_color[None] * dot
                 else:  # hit background or light voxel, terminate tracing
                     hit_background = 1
                     break
@@ -341,14 +354,21 @@ class Renderer:
             u = 1.0 * i / self.image_res[0]
             v = 1.0 * j / self.image_res[1]
 
-            darken = 1.0 - self.vignette_strength * max((ti.sqrt(
-                (u - self.vignette_center[0])**2 +
-                (v - self.vignette_center[1])**2) - self.vignette_radius), 0)
+            darken = 1.0 - self.vignette_strength * max(
+                (
+                    ti.sqrt(
+                        (u - self.vignette_center[0]) ** 2
+                        + (v - self.vignette_center[1]) ** 2
+                    )
+                    - self.vignette_radius
+                ),
+                0,
+            )
 
             for c in ti.static(range(3)):
                 self._rendered_image[i, j][c] = ti.sqrt(
-                    self.color_buffer[i, j][c] * darken * self.exposure /
-                    samples)
+                    self.color_buffer[i, j][c] * darken * self.exposure / samples
+                )
 
     @ti.kernel
     def recompute_bbox(self):

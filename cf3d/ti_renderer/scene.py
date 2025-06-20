@@ -1,7 +1,7 @@
 import taichi as ti
-from ti_renderer.renderer import Renderer
-from ti_renderer.math_utils import np_normalize
 
+from ti_renderer.math_utils import np_normalize
+from ti_renderer.renderer import Renderer
 
 VOXEL_DX = 1 / 64
 SCREEN_RES = (1280, 720)
@@ -11,22 +11,24 @@ UP_DIR = (0, 1, 0)
 MAT_LAMBERTIAN = 1
 MAT_LIGHT = 2
 
+
 class Scene:
     def __init__(self, voxel_edges=0.06, exposure=3, image_res=SCREEN_RES, up=UP_DIR):
-        self.renderer = Renderer(dx=VOXEL_DX,
-                                 image_res=image_res,
-                                 up=up,
-                                 voxel_edges=voxel_edges,
-                                 exposure=exposure)
+        self.renderer = Renderer(
+            dx=VOXEL_DX,
+            image_res=image_res,
+            up=up,
+            voxel_edges=voxel_edges,
+            exposure=exposure,
+        )
 
     @staticmethod
     @ti.func
     def round_idx(idx_):
         idx = ti.cast(idx_, ti.f32)
-        return ti.Vector(
-            [ti.round(idx[0]),
-             ti.round(idx[1]),
-             ti.round(idx[2])]).cast(ti.i32)
+        return ti.Vector([ti.round(idx[0]), ti.round(idx[1]), ti.round(idx[2])]).cast(
+            ti.i32
+        )
 
     @ti.func
     def set_voxel(self, idx, mat, color):
